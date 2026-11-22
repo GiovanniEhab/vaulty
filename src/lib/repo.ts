@@ -12,7 +12,7 @@ import {
   writeBatch,
   type Firestore,
 } from 'firebase/firestore';
-import type { CollectionName, Settings, VaultState } from './types';
+import type { CollectionName, Settings, VaultState, WidgetId } from './types';
 
 export const COLLECTIONS: CollectionName[] = ['accounts', 'transactions', 'budgets', 'goals', 'recurring'];
 
@@ -76,6 +76,10 @@ export const pickSettings = (state: VaultState): Settings => ({
   activeMonth: state.activeMonth,
   isDemoData: state.isDemoData,
   demoBannerDismissed: state.demoBannerDismissed,
+  voiceReplies: state.voiceReplies,
+  notificationsEnabled: state.notificationsEnabled,
+  reminderHour: state.reminderHour,
+  widgetIds: state.widgetIds,
 });
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -157,6 +161,12 @@ class FirebaseRepo implements Repo {
             activeMonth: typeof data.activeMonth === 'string' ? data.activeMonth : undefined,
             isDemoData: Boolean(data.isDemoData),
             demoBannerDismissed: Boolean(data.demoBannerDismissed),
+            voiceReplies: data.voiceReplies !== false,
+            notificationsEnabled: Boolean(data.notificationsEnabled),
+            reminderHour: typeof data.reminderHour === 'number' ? data.reminderHour : 20,
+            widgetIds: Array.isArray(data.widgetIds)
+              ? (data.widgetIds as WidgetId[])
+              : ['netWorth', 'month', 'budget', 'voice'],
           });
         },
         (error) => onError(error.message),

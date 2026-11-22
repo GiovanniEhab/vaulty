@@ -8,6 +8,8 @@ export type SheetState =
   | { kind: 'goal'; id?: string }
   | { kind: 'contribute'; id: string }
   | { kind: 'recurring' }
+  | { kind: 'assistant' }
+  | { kind: 'widgets' }
   | { kind: 'data' }
   | { kind: 'confirm'; title: string; message: string; confirmLabel: string; onConfirm: () => void };
 

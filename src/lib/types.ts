@@ -2,6 +2,7 @@ export type TxType = 'income' | 'expense' | 'transfer';
 export type AccountType = 'checking' | 'cash' | 'savings' | 'credit';
 export type CurrencyCode = 'EGP' | 'USD' | 'EUR' | 'GBP' | 'SAR' | 'AED';
 export type Theme = 'light' | 'dark';
+export type WidgetId = 'netWorth' | 'month' | 'budget' | 'goal' | 'voice';
 
 export interface Account {
   id: string;
@@ -58,6 +59,12 @@ export interface Settings {
   activeMonth: string;
   isDemoData: boolean;
   demoBannerDismissed: boolean;
+  /** Assistant reads its answers out loud. */
+  voiceReplies: boolean;
+  notificationsEnabled: boolean;
+  /** 0-23, local time for the daily check-in reminder. */
+  reminderHour: number;
+  widgetIds: WidgetId[];
 }
 
 export interface VaultData {

@@ -1,4 +1,4 @@
-import type { AccountType, CurrencyCode } from './types';
+import type { AccountType, CurrencyCode, WidgetId } from './types';
 
 export const CURRENCIES: Record<CurrencyCode, { symbol: string; code: CurrencyCode; decimals: number; label: string }> = {
   EGP: { symbol: 'E£', code: 'EGP', decimals: 0, label: 'Egyptian Pound' },
@@ -49,3 +49,11 @@ export const ALL_CATEGORIES = [
 
 export const ACCOUNT_COLORS = ['#059669', '#6366f1', '#f59e0b', '#e11d48', '#0ea5e9', '#8b5cf6'];
 export const GOAL_COLORS = ['#10b981', '#6366f1', '#f59e0b', '#ec4899', '#0ea5e9'];
+
+export const WIDGET_CATALOG: { id: WidgetId; label: string; icon: string; description: string }[] = [
+  { id: 'netWorth', label: 'Net worth', icon: 'wallet', description: 'Total balance across every account' },
+  { id: 'month', label: 'This month', icon: 'receipt', description: 'Spent and earned this month' },
+  { id: 'budget', label: 'Top budget', icon: 'pie-chart', description: 'The budget closest to its limit' },
+  { id: 'goal', label: 'Top goal', icon: 'piggy-bank', description: 'Progress on your largest savings goal' },
+  { id: 'voice', label: 'Ask Vaulty', icon: 'mic', description: 'One tap to speak a command' },
+];

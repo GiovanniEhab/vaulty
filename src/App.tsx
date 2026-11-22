@@ -3,6 +3,7 @@ import Icon from './components/Icon';
 import Toasts from './components/Toasts';
 import { CURRENCIES, CURRENCY_CODES } from './lib/constants';
 import { formatMoney, formatMonthLabel } from './lib/format';
+import { checkNotifications } from './lib/notifications';
 import { toast } from './lib/toast';
 import type { CurrencyCode, PlanTab, ViewName } from './lib/types';
 import SheetHost from './sheets/SheetHost';
@@ -50,6 +51,14 @@ function Shell() {
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
   }, []);
+
+  /* Local alerts for budgets, bills and the daily check-in. */
+  useEffect(() => {
+    if (!state.notificationsEnabled) return;
+    checkNotifications(state);
+    const timer = window.setInterval(() => checkNotifications(state), 60_000);
+    return () => window.clearInterval(timer);
+  }, [state]);
 
   const ui: UIActions = useMemo(
     () => ({
@@ -105,6 +114,15 @@ function Shell() {
             </div>
 
             <div className="flex shrink-0 items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setSheet({ kind: 'assistant' })}
+                aria-label="Voice assistant"
+                className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-sm shadow-emerald-500/30 transition-transform active:scale-95"
+              >
+                <Icon name="mic" className="h-4 w-4" />
+              </button>
+
               <select
                 value={state.currency}
                 onChange={(event) => {

@@ -1,5 +1,6 @@
 import type { SheetState } from '../ui/UIContext';
 import AccountSheet from './AccountSheet';
+import AssistantSheet from './AssistantSheet';
 import BudgetSheet from './BudgetSheet';
 import ConfirmSheet from './ConfirmSheet';
 import ContributeSheet from './ContributeSheet';
@@ -7,6 +8,7 @@ import DataSheet from './DataSheet';
 import GoalSheet from './GoalSheet';
 import RecurringSheet from './RecurringSheet';
 import TransactionSheet from './TransactionSheet';
+import WidgetsSheet from './WidgetsSheet';
 
 export function SheetHost({ sheet, onClose }: { sheet: SheetState | null; onClose: () => void }) {
   if (!sheet) return null;
@@ -24,6 +26,10 @@ export function SheetHost({ sheet, onClose }: { sheet: SheetState | null; onClos
       return <ContributeSheet id={sheet.id} onClose={onClose} />;
     case 'recurring':
       return <RecurringSheet onClose={onClose} />;
+    case 'assistant':
+      return <AssistantSheet onClose={onClose} />;
+    case 'widgets':
+      return <WidgetsSheet onClose={onClose} />;
     case 'data':
       return <DataSheet onClose={onClose} />;
     case 'confirm':

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Chart } from 'chart.js/auto';
 import Icon from '../components/Icon';
 import TransactionRow from '../components/TransactionRow';
+import WidgetStrip from '../components/WidgetStrip';
 import { ACCOUNT_TYPES } from '../lib/constants';
 import { categoryMeta, monthStats } from '../lib/calc';
 import { formatMoney, formatMonthLabel, last6Months } from '../lib/format';
@@ -193,6 +194,8 @@ export function OverviewView() {
           </button>
         ))}
       </section>
+
+      <WidgetStrip />
 
       <section>
         <div className="mb-2 flex items-center justify-between">

@@ -1,15 +1,39 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
+import { Switch } from '../components/Field';
 import Icon from '../components/Icon';
 import Sheet from '../components/Sheet';
 import { downloadFile, toCsv } from '../lib/download';
+import { notificationPermission, notificationsSupported, requestNotificationPermission } from '../lib/notifications';
 import { toast } from '../lib/toast';
 import { useVault } from '../store/VaultContext';
 import { useUI } from '../ui/UIContext';
 
 export function DataSheet({ onClose }: { onClose: () => void }) {
-  const { state, sync, importState, startFresh, restoreSample } = useVault();
+  const { state, sync, importState, startFresh, restoreSample, updateSettings } = useVault();
   const { confirm } = useUI();
   const fileRef = useRef<HTMLInputElement>(null);
+  const [permission, setPermission] = useState(notificationPermission());
+
+  const toggleNotifications = async (next: boolean) => {
+    if (!next) {
+      updateSettings({ notificationsEnabled: false });
+      return;
+    }
+    const granted = await requestNotificationPermission();
+    setPermission(notificationPermission());
+    updateSettings({ notificationsEnabled: granted });
+    if (!granted) toast('Notifications are blocked in this browser.', 'error');
+  };
+
+  const notificationStatus = !notificationsSupported()
+    ? 'Notifications are not supported in this browser.'
+    : permission === 'denied'
+      ? 'Blocked — allow notifications for this site in your browser settings.'
+      : state.notificationsEnabled
+        ? 'On. Budget alerts, due bills and your daily check-in fire while Vaulty is open.'
+        : 'Get budget alerts, due-bill reminders and a daily check-in while Vaulty is open.';
+
+  const hourLabel = (hour: number) => `${hour % 12 === 0 ? 12 : hour % 12} ${hour < 12 ? 'AM' : 'PM'}`;
 
   const exportJson = () => {
     downloadFile(`vaulty-backup-${state.activeMonth}.json`, JSON.stringify(state, null, 2), 'application/json');
@@ -124,6 +148,42 @@ export function DataSheet({ onClose }: { onClose: () => void }) {
             <Icon name="download" className="h-3.5 w-3.5" />
             <span>Export all transactions (CSV)</span>
           </button>
+        </section>
+
+        <section className="space-y-2.5 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/70">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Icon
+                name={state.notificationsEnabled ? 'bell' : 'bell-off'}
+                className="h-4 w-4 text-slate-400"
+              />
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Notifications
+              </span>
+            </div>
+            <Switch
+              checked={state.notificationsEnabled}
+              label="Enable notifications"
+              onChange={(value) => void toggleNotifications(value)}
+            />
+          </div>
+          <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">{notificationStatus}</p>
+          <div className="flex items-center justify-between rounded-xl bg-white px-3 py-2 dark:bg-slate-900">
+            <span className="text-[11px] font-semibold">Daily check-in</span>
+            <select
+              value={state.reminderHour}
+              disabled={!state.notificationsEnabled}
+              onChange={(event) => updateSettings({ reminderHour: Number(event.target.value) })}
+              aria-label="Daily reminder time"
+              className="bg-transparent text-[11px] font-semibold text-slate-600 focus:outline-none disabled:opacity-40 dark:text-slate-300"
+            >
+              {Array.from({ length: 24 }, (_, hour) => hour).map((hour) => (
+                <option key={hour} value={hour}>
+                  {hourLabel(hour)}
+                </option>
+              ))}
+            </select>
+          </div>
         </section>
 
         <section className="space-y-2.5 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/70">

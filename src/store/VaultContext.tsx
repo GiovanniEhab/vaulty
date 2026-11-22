@@ -56,6 +56,7 @@ export interface VaultStore {
   setActiveMonth: (month: string) => void;
   shiftActiveMonth: (delta: number) => void;
   dismissDemoBanner: () => void;
+  updateSettings: (patch: Partial<Settings>) => void;
   startFresh: () => void;
   restoreSample: () => void;
   importState: (data: unknown) => boolean;
@@ -204,6 +205,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         patchSettings({ activeMonth: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` });
       },
       dismissDemoBanner: () => patchSettings({ demoBannerDismissed: true }),
+      updateSettings: (patch) => patchSettings(patch),
 
       startFresh: () => {
         const next = emptyState(state.currency, state.theme);
