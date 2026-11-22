@@ -10,9 +10,13 @@
     "preview": "vite preview --host 0.0.0.0 --port 4173",
     "typecheck": "tsc --noEmit",
     "firebase:emulators": "firebase emulators:start --only firestore,auth",
-    "firebase:deploy:rules": "firebase deploy --only firestore:rules"
+    "firebase:deploy:rules": "firebase deploy --only firestore:rules",
+    "android:sync": "npm run build && cap sync android",
+    "android:apk": "npm run build && cap sync android && cd android && ./gradlew assembleDebug"
   },
   "dependencies": {
+    "@capacitor/android": "^6.2.3",
+    "@capacitor/core": "^6.2.3",
     "chart.js": "^4.4.7",
     "firebase": "^11.1.0",
     "lucide-react": "^0.468.0",
@@ -20,6 +24,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^6.2.3",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",

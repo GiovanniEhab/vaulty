@@ -33,6 +33,39 @@ npm run build        # typecheck + production build into dist/
 
 Dependencies are pinned in `package-lock.json`; use `npm ci` for a clean install.
 
+## Android APK
+
+A Capacitor 6 shell in `android/` loads the built web app in a WebView. A prebuilt debug APK is at
+`releases/vaulty-1.0-debug.apk` (package `com.vaulty.app`, version 1.0, minSdk 22, debug-signed so it installs
+directly).
+
+```bash
+adb install -r releases/vaulty-1.0-debug.apk
+```
+
+Or copy the file to the phone, open it, and allow installing from unknown sources.
+
+Rebuild it (needs JDK 17 and Android SDK platform 34 + build-tools 34.0.0):
+
+```bash
+npm install
+npm run android:sync        # build the web app and copy it into android/
+cd android
+./gradlew assembleDebug     # → app/build/outputs/apk/debug/app-debug.apk
+```
+
+Point Gradle at your SDK with `ANDROID_HOME` or a line `sdk.dir=/path/to/Android/sdk` in
+`android/local.properties`. `npm run android:apk` does the sync and build in one step once those are set.
+
+For a Play Store build, create a keystore, add a `signingConfigs.release` block to
+`android/app/build.gradle`, and run `./gradlew bundleRelease` (`.aab`).
+
+**WebView notes:** Android WebView does not implement the Web Speech API, so the assistant's microphone reports
+“not supported” inside the APK — typed commands work exactly the same. Web Notifications are also unavailable in
+WebView, so the notification toggle reports that it is unsupported. Firebase works because the JS SDK talks to
+Firestore directly; `google-services.json` is not needed (no native FCM). After changing web code, rebuild and run
+`npx cap sync android`, or the APK keeps the old assets. The launcher icon is still Capacitor's default.
+
 ## Vaulty Assistant
 
 Tap the microphone in the header (or the Assistant widget) and talk, or type the same sentence in the sheet.

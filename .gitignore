@@ -12,3 +12,7 @@ firestore-debug.log
 ui-debug.log
 *.tsbuildinfo
 .vite
+
+# Built APKs are kept locally, not in git
+releases/
+/freebuff-sites-build/
