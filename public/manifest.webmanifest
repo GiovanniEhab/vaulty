@@ -1,0 +1,19 @@
+{
+  "name": "Vaulty — Mobile Money Manager",
+  "short_name": "Vaulty",
+  "description": "Track accounts, spending, budgets and savings goals. Local-first, optional Firebase sync.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8fafc",
+  "theme_color": "#059669",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
