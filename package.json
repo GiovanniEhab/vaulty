@@ -12,7 +12,7 @@
     "firebase:emulators": "firebase emulators:start --only firestore,auth",
     "firebase:deploy:rules": "firebase deploy --only firestore:rules",
     "android:sync": "npm run build && cap sync android",
-    "android:apk": "npm run build && cap sync android && cd android && ./gradlew assembleDebug"
+    "android:apk": "npm run build && cap sync android && cd android && ./gradlew assembleRelease"
   },
   "dependencies": {
     "@capacitor/android": "^6.2.3",
