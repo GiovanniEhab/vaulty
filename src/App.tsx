@@ -5,6 +5,7 @@ import { CURRENCIES, CURRENCY_CODES } from './lib/constants';
 import { formatMoney, formatMonthLabel } from './lib/format';
 import { checkNotifications } from './lib/notifications';
 import { toast } from './lib/toast';
+import { autoCheckForUpdates, downloadAndInstall, useUpdateState } from './lib/updater';
 import type { CurrencyCode, PlanTab, ViewName } from './lib/types';
 import SheetHost from './sheets/SheetHost';
 import { useVault, VaultProvider } from './store/VaultContext';
@@ -37,6 +38,7 @@ function Shell() {
   const [planTab, setPlanTab] = useState<PlanTab>('budgets');
   const [sheet, setSheet] = useState<SheetState | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const update = useUpdateState();
 
   const netWorthValue = Object.values(balances).reduce((sum, value) => sum + value, 0);
 
@@ -51,6 +53,11 @@ function Shell() {
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
   }, []);
+
+  /* Android app: look for a new APK at launch (throttled) and install it when auto-update is on. */
+  useEffect(() => {
+    void autoCheckForUpdates(state.autoUpdate);
+  }, [state.autoUpdate]);
 
   /* Local alerts for budgets, bills and the daily check-in. */
   useEffect(() => {
@@ -220,6 +227,29 @@ function Shell() {
                   <Icon name="x" className="h-3.5 w-3.5" />
                 </button>
               </div>
+            </div>
+          ) : null}
+
+          {update.status === 'available' || update.status === 'downloading' || update.status === 'ready' ? (
+            <div className="mx-4 mt-3 flex items-center justify-between gap-2 rounded-2xl border border-emerald-200/80 bg-white px-3.5 py-2.5 text-[11px] shadow-sm dark:border-emerald-800/60 dark:bg-slate-900">
+              <div className="flex min-w-0 items-center gap-2">
+                <Icon name="download" className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <span className="leading-snug text-slate-700 dark:text-slate-200">
+                  {update.status === 'downloading'
+                    ? `Downloading Vaulty ${update.info?.version ?? ''} — ${update.percent}%`
+                    : update.status === 'ready'
+                      ? `Vaulty ${update.info?.version ?? ''} is ready to install`
+                      : `Vaulty ${update.info?.version ?? ''} is available`}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => void downloadAndInstall()}
+                disabled={update.status === 'downloading'}
+                className="shrink-0 rounded-lg bg-emerald-600 px-2.5 py-1 font-semibold text-white transition-transform active:scale-95 disabled:opacity-60"
+              >
+                {update.status === 'downloading' ? '…' : 'Install'}
+              </button>
             </div>
           ) : null}
 

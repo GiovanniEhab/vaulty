@@ -20,6 +20,8 @@ Built with React + TypeScript + Vite, Tailwind CSS, Chart.js and the Firebase We
   change settings or ask questions. Answers can be read aloud.
 - **Insights** — graphs for every expense and income category, daily flow, biggest entries and per-account flow.
 - **Widgets** — configurable cards on the home screen (net worth, monthly spend, top budget, top goal, assistant).
+- **In-app updates** — the Android app checks GitHub releases at launch, downloads the new APK and opens
+  Android's installer (automatic when Auto-update is on). No manual re-download from the browser.
 - **Notifications** — budget alerts at 90% and over-limit, due-bill reminders and a daily check-in at an hour you pick.
 - **Settings & data** — JSON backup / restore, CSV export, start fresh, restore sample data, live cloud-sync status.
 - Light/dark theme, six currencies, month switching, demo data you can clear in one tap.
@@ -84,6 +86,34 @@ uploads, run `./gradlew bundleRelease` (`.aab`).
 also unavailable in WebView, so the notification toggle reports that it is unsupported. Firebase works because the JS SDK talks to
 Firestore directly; `google-services.json` is not needed (no native FCM). After changing web code, rebuild and run
 `npx cap sync android`, or the APK keeps the old assets. The launcher icon is still Capacitor's default.
+
+## In-app updates
+
+The Android build updates itself from this repository's GitHub releases — you never have to download
+`vaulty-1.x.apk` by hand:
+
+- at launch it reads `update.json` at the repository root (served from raw.githubusercontent, so there is no
+  GitHub API quota to run into), at most once every six hours;
+- the release's `versionCode` is compared with the installed one;
+- **Auto-update** (Settings → App Updates, on by default) downloads the APK in the background, verifies the
+  `sha256` digest published with the release, and opens Android's installer;
+- with Auto-update off, Home shows an *Update available* card and Settings has **Check now**.
+
+Android never installs silently for a normal app: the system installer asks for confirmation, and the first time
+you must allow "install unknown apps" for Vaulty. That is as automatic as the platform allows outside the Play
+Store. The permission is declared as `REQUEST_INSTALL_PACKAGES`; the downloaded file is served to the installer
+through the app's `FileProvider` from the cache directory.
+
+The feed is configurable with `VITE_UPDATE_FEED` — the default `update.json`, any GitHub “latest release”
+endpoint, or any JSON manifest shaped like:
+
+```json
+{ "version": "1.3", "versionCode": 4, "url": "https://…/vaulty-1.3-release.apk", "sha256": "…", "notes": "…" }
+```
+
+`update.json` is rewritten for each release (same values as the release notes) — bump `version` and `versionCode`
+there when you publish, or point the app at the GitHub API endpoint instead. Because the app reads the manifest
+without signing in, the repository has to be public; only collaborators can push or edit it.
 
 ## Vaulty Assistant
 

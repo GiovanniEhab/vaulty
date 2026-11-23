@@ -67,6 +67,8 @@ export interface Settings {
   widgetIds: WidgetId[];
   /** Language the assistant listens and answers in. */
   assistantLanguage: 'en' | 'ar';
+  /** Android app: download new versions automatically when one is found. */
+  autoUpdate: boolean;
 }
 
 export interface VaultData {

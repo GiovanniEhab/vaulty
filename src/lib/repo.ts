@@ -81,6 +81,7 @@ export const pickSettings = (state: VaultState): Settings => ({
   reminderHour: state.reminderHour,
   widgetIds: state.widgetIds,
   assistantLanguage: state.assistantLanguage,
+  autoUpdate: state.autoUpdate,
 });
 
 function chunk<T>(items: T[], size: number): T[][] {
