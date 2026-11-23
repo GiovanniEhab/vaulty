@@ -15,12 +15,17 @@ interface Message {
 }
 
 const HELLO = 'Hi. Tell me what to add, move or change — for example "spent 250 on groceries".';
+const HELLO_AR = 'أهلاً. قولي أسجل إيه أو أغيّر إيه — مثلاً "صرفت ٢٥٠ على البقالة".';
 
 export function AssistantSheet({ onClose }: { onClose: () => void }) {
   const { state, saveTransaction, saveBudget, contributeToGoal, deleteTransaction, updateSettings } = useVault();
-  const { setView, setPlanTab } = useUI();
+  const { setView, setPlanTab, openSheet } = useUI();
+  const language = state.assistantLanguage;
+  const isArabic = language === 'ar';
 
-  const [messages, setMessages] = useState<Message[]>([{ id: 'hello', role: 'assistant', text: HELLO }]);
+  const [messages, setMessages] = useState<Message[]>([
+    { id: 'hello', role: 'assistant', text: language === 'ar' ? HELLO_AR : HELLO },
+  ]);
   const [draft, setDraft] = useState('');
   const [listening, setListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +53,7 @@ export function AssistantSheet({ onClose }: { onClose: () => void }) {
     if (!command) return;
     push('user', command);
 
-    const plan = planCommand(command, state);
+    const plan = planCommand(command, state, language);
     let reply = plan.reply;
 
     switch (plan.kind) {
@@ -67,6 +72,9 @@ export function AssistantSheet({ onClose }: { onClose: () => void }) {
       case 'navigate':
         setPlanTab(plan.planTab ?? 'budgets');
         setView(plan.view);
+        break;
+      case 'insights':
+        openSheet({ kind: 'insights' });
         break;
       case 'settings':
         if (plan.patch.notificationsEnabled && notificationPermission() !== 'granted') {
@@ -88,7 +96,7 @@ export function AssistantSheet({ onClose }: { onClose: () => void }) {
 
     const shouldSpeak =
       plan.kind === 'settings' && plan.patch.voiceReplies !== undefined ? plan.patch.voiceReplies : state.voiceReplies;
-    if (shouldSpeak) speak(reply);
+    if (shouldSpeak) speak(reply, /[\u0600-\u06FF]/.test(reply) ? 'ar' : 'en');
   };
 
   const toggleListening = () => {
@@ -101,7 +109,7 @@ export function AssistantSheet({ onClose }: { onClose: () => void }) {
       setListening(false);
       return;
     }
-    const recognition = createRecognition();
+    const recognition = createRecognition(language);
     if (!recognition) {
       setError('Could not start the microphone. Type your command instead.');
       return;
@@ -139,8 +147,27 @@ export function AssistantSheet({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Sheet title="Vaulty Assistant" onClose={onClose}>
+    <Sheet title={isArabic ? 'مساعد Vaulty' : 'Vaulty Assistant'} onClose={onClose}>
       <div className="space-y-3.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[11px] text-slate-500 dark:text-slate-400">
+            {isArabic ? 'اتكلم أو اكتب بالعربي أو الإنجليزي' : 'Speak or type in English or Arabic'}
+          </span>
+          <div className="flex shrink-0 gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+            {(['en', 'ar'] as const).map((code) => (
+              <button
+                key={code}
+                type="button"
+                onClick={() => updateSettings({ assistantLanguage: code })}
+                className={`rounded-lg px-2 py-1 text-[11px] font-bold transition-colors ${
+                  language === code ? 'bg-white text-emerald-600 shadow-sm dark:bg-slate-900 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'
+                }`}
+              >
+                {code === 'en' ? 'English' : 'العربية'}
+              </button>
+            ))}
+          </div>
+        </div>
         <div
           ref={transcriptRef}
           className="no-scrollbar max-h-[34vh] space-y-2 overflow-y-auto rounded-2xl bg-slate-50 p-3 dark:bg-slate-800/60"
@@ -148,6 +175,7 @@ export function AssistantSheet({ onClose }: { onClose: () => void }) {
           {messages.map((message) => (
             <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
+                dir="auto"
                 className={`max-w-[85%] whitespace-pre-line rounded-2xl px-3 py-2 text-xs leading-relaxed ${
                   message.role === 'user'
                     ? 'bg-emerald-600 text-white'
@@ -183,7 +211,17 @@ export function AssistantSheet({ onClose }: { onClose: () => void }) {
             <Icon name={listening ? 'mic-off' : 'mic'} className="h-7 w-7" />
           </button>
           <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-            {listening ? 'Listening — tap to stop' : supported ? 'Tap and speak' : 'Voice needs Chrome, Edge or Safari'}
+            {listening
+              ? isArabic
+                ? 'بسمع — دوس للإيقاف'
+                : 'Listening — tap to stop'
+              : supported
+                ? isArabic
+                  ? 'دوس واتكلم'
+                  : 'Tap and speak'
+                : isArabic
+                  ? 'الصوت يحتاج Chrome أو Edge أو Safari'
+                  : 'Voice needs Chrome, Edge or Safari'}
           </span>
         </div>
 
@@ -193,7 +231,7 @@ export function AssistantSheet({ onClose }: { onClose: () => void }) {
           <input
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
-            placeholder='Type a command, e.g. "spent 40 on coffee"'
+            placeholder={isArabic ? 'اكتب أمر، مثال: "صرفت ٤٠ على القهوة"' : 'Type a command, e.g. "spent 40 on coffee"'}
             aria-label="Type a command"
             className="h-11 min-w-0 flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-3 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800"
           />
@@ -207,7 +245,7 @@ export function AssistantSheet({ onClose }: { onClose: () => void }) {
         </form>
 
         <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
-          {ASSISTANT_SUGGESTIONS.slice(0, 5).map((suggestion) => (
+          {ASSISTANT_SUGGESTIONS[language].slice(0, 5).map((suggestion) => (
             <button
               key={suggestion}
               type="button"
@@ -223,8 +261,10 @@ export function AssistantSheet({ onClose }: { onClose: () => void }) {
           <div className="flex items-center gap-2">
             <Icon name={state.voiceReplies ? 'volume-2' : 'volume-x'} className="h-4 w-4 text-slate-400" />
             <div>
-              <div className="text-xs font-semibold">Speak replies</div>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400">Read answers out loud</div>
+              <div className="text-xs font-semibold">{isArabic ? 'قول الردود بصوت' : 'Speak replies'}</div>
+              <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                {isArabic ? 'يقرأ الإجابات بصوت عالي' : 'Read answers out loud'}
+              </div>
             </div>
           </div>
           <Switch
@@ -236,10 +276,10 @@ export function AssistantSheet({ onClose }: { onClose: () => void }) {
 
         <button
           type="button"
-          onClick={() => void run('help')}
+          onClick={() => void run(isArabic ? 'مساعدة' : 'help')}
           className="w-full text-center text-[11px] font-semibold text-emerald-600 dark:text-emerald-400"
         >
-          What can I say?
+          {isArabic ? 'أقول إيه؟' : 'What can I say?'}
         </button>
       </div>
     </Sheet>

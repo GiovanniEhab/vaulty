@@ -292,6 +292,13 @@ export function OverviewView() {
             <span className="flex items-center gap-1">
               <span className="h-2 w-2 rounded-full bg-rose-500" />Out
             </span>
+            <button
+              type="button"
+              onClick={() => openSheet({ kind: 'insights' })}
+              className="font-semibold text-emerald-600 dark:text-emerald-400"
+            >
+              Details
+            </button>
           </div>
         </div>
         <div className="relative h-48">

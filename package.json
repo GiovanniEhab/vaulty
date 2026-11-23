@@ -1,7 +1,7 @@
 {
   "name": "vaulty",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "Vaulty — a mobile-first personal money manager with optional Firebase sync.",
   "scripts": {

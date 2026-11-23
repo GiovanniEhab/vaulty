@@ -3,6 +3,8 @@
  * the assistant always keeps a typed fallback.
  */
 
+export type VoiceLanguage = 'en' | 'ar';
+
 export interface SpeechResultEvent {
   resultIndex: number;
   results: {
@@ -39,25 +41,34 @@ export function isSpeechRecognitionSupported(): boolean {
   return recognitionCtor() !== null;
 }
 
-export function createRecognition(): SpeechRecognitionLike | null {
+export function recognitionLocale(language: VoiceLanguage): string {
+  return language === 'ar' ? 'ar-EG' : 'en-US';
+}
+
+export function createRecognition(language: VoiceLanguage = 'en'): SpeechRecognitionLike | null {
   const Ctor = recognitionCtor();
   if (!Ctor) return null;
   const recognition = new Ctor();
-  recognition.lang = 'en-US';
+  recognition.lang = recognitionLocale(language);
   recognition.continuous = false;
   recognition.interimResults = false;
   recognition.maxAlternatives = 1;
   return recognition;
 }
 
-export function speak(text: string): void {
+export function speak(text: string, language: VoiceLanguage = 'en'): void {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
   try {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
+    utterance.lang = recognitionLocale(language);
     utterance.rate = 1.02;
     utterance.pitch = 1;
+
+    const voices = window.speechSynthesis.getVoices();
+    const match = voices.find((voice) => voice.lang.toLowerCase().startsWith(language === 'ar' ? 'ar' : 'en'));
+    if (match) utterance.voice = match;
+
     window.speechSynthesis.speak(utterance);
   } catch {
     /* speech is a nice-to-have; never break the assistant over it */
@@ -66,5 +77,5 @@ export function speak(text: string): void {
 
 export function stopSpeaking(): void {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel();
+    window.speechSynthesis.cancel();
 }

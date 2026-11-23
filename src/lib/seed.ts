@@ -12,6 +12,7 @@ export function emptyState(currency: VaultState['currency'] = 'EGP', theme: Vaul
     notificationsEnabled: false,
     reminderHour: 20,
     widgetIds: ['netWorth', 'month', 'budget', 'voice'],
+    assistantLanguage: 'en',
     accounts: [
       { id: 'acc_main', name: 'Main Bank Account', type: 'checking', initialBalance: 0, color: '#059669' },
       { id: 'acc_wallet', name: 'Cash Wallet', type: 'cash', initialBalance: 0, color: '#f59e0b' },
@@ -113,6 +114,7 @@ export function sampleState(currency: VaultState['currency'] = 'EGP', theme: Vau
     notificationsEnabled: false,
     reminderHour: 20,
     widgetIds: ['netWorth', 'month', 'budget', 'goal', 'voice'],
+    assistantLanguage: 'en',
     accounts,
     transactions,
     budgets,
@@ -137,6 +139,7 @@ export function normalizeState(input: unknown, fallback: VaultState): VaultState
     notificationsEnabled: Boolean(raw.notificationsEnabled),
     reminderHour: typeof raw.reminderHour === 'number' ? raw.reminderHour : 20,
     widgetIds: Array.isArray(raw.widgetIds) && raw.widgetIds.length > 0 ? raw.widgetIds : fallback.widgetIds,
+    assistantLanguage: raw.assistantLanguage === 'ar' ? 'ar' : 'en',
     accounts: raw.accounts,
     transactions: raw.transactions,
     budgets: Array.isArray(raw.budgets) ? raw.budgets : [],

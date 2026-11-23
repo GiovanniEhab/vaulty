@@ -155,6 +155,14 @@ export function ActivityView() {
             </select>
             <button
               type="button"
+              onClick={() => openSheet({ kind: 'insights' })}
+              className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 font-semibold text-white active:scale-95"
+            >
+              <Icon name="pie-chart" className="h-3 w-3" />
+              <span>Insights</span>
+            </button>
+            <button
+              type="button"
               onClick={exportCsv}
               className="flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 font-semibold text-slate-700 active:scale-95 dark:bg-slate-800 dark:text-slate-200"
             >

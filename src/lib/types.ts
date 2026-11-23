@@ -65,6 +65,8 @@ export interface Settings {
   /** 0-23, local time for the daily check-in reminder. */
   reminderHour: number;
   widgetIds: WidgetId[];
+  /** Language the assistant listens and answers in. */
+  assistantLanguage: 'en' | 'ar';
 }
 
 export interface VaultData {

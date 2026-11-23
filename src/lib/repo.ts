@@ -80,6 +80,7 @@ export const pickSettings = (state: VaultState): Settings => ({
   notificationsEnabled: state.notificationsEnabled,
   reminderHour: state.reminderHour,
   widgetIds: state.widgetIds,
+  assistantLanguage: state.assistantLanguage,
 });
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -167,6 +168,7 @@ class FirebaseRepo implements Repo {
             widgetIds: Array.isArray(data.widgetIds)
               ? (data.widgetIds as WidgetId[])
               : ['netWorth', 'month', 'budget', 'voice'],
+            assistantLanguage: data.assistantLanguage === 'ar' ? 'ar' : 'en',
           });
         },
         (error) => onError(error.message),

@@ -10,6 +10,7 @@ export type SheetState =
   | { kind: 'recurring' }
   | { kind: 'assistant' }
   | { kind: 'widgets' }
+  | { kind: 'insights' }
   | { kind: 'data' }
   | { kind: 'confirm'; title: string; message: string; confirmLabel: string; onConfirm: () => void };
 

@@ -16,8 +16,9 @@ Built with React + TypeScript + Vite, Tailwind CSS, Chart.js and the Firebase We
   transfers between accounts, edit and delete.
 - **Plan** — category budgets with progress bars, savings goals with contributions, recurring bills you can log
   into the ledger for the active month.
-- **Vaulty Assistant** — speak or type a command to log money, set budgets, fund goals, change settings or ask
-  questions. Answers can be read aloud.
+- **Vaulty Assistant** — speak or type a command in **English or Arabic** to log money, set budgets, fund goals,
+  change settings or ask questions. Answers can be read aloud.
+- **Insights** — graphs for every expense and income category, daily flow, biggest entries and per-account flow.
 - **Widgets** — configurable cards on the home screen (net worth, monthly spend, top budget, top goal, assistant).
 - **Notifications** — budget alerts at 90% and over-limit, due-bill reminders and a daily check-in at an hour you pick.
 - **Settings & data** — JSON backup / restore, CSV export, start fresh, restore sample data, live cloud-sync status.
@@ -36,11 +37,11 @@ Dependencies are pinned in `package-lock.json`; use `npm ci` for a clean install
 ## Android APK
 
 A Capacitor 6 shell in `android/` loads the built web app in a WebView. A prebuilt debug APK is at
-`releases/vaulty-1.0-debug.apk` (package `com.vaulty.app`, version 1.0, minSdk 22, debug-signed so it installs
+`releases/vaulty-1.1-debug.apk` (package `com.vaulty.app`, version 1.1, minSdk 22, debug-signed so it installs
 directly).
 
 ```bash
-adb install -r releases/vaulty-1.0-debug.apk
+adb install -r releases/vaulty-1.1-debug.apk
 ```
 
 Or copy the file to the phone, open it, and allow installing from unknown sources.
@@ -61,8 +62,8 @@ For a Play Store build, create a keystore, add a `signingConfigs.release` block 
 `android/app/build.gradle`, and run `./gradlew bundleRelease` (`.aab`).
 
 **WebView notes:** Android WebView does not implement the Web Speech API, so the assistant's microphone reports
-“not supported” inside the APK — typed commands work exactly the same. Web Notifications are also unavailable in
-WebView, so the notification toggle reports that it is unsupported. Firebase works because the JS SDK talks to
+“not supported” inside the APK — typed commands (English or Arabic) work exactly the same. Web Notifications are
+also unavailable in WebView, so the notification toggle reports that it is unsupported. Firebase works because the JS SDK talks to
 Firestore directly; `google-services.json` is not needed (no native FCM). After changing web code, rebuild and run
 `npx cap sync android`, or the APK keeps the old assets. The launcher icon is still Capacitor's default.
 
@@ -82,10 +83,43 @@ Tap the microphone in the header (or the Assistant widget) and talk, or type the
 | “Remind me at 8 pm”, “Turn on notifications” | Sets the daily check-in |
 | “Undo last” | Deletes the most recent transaction |
 
+Arabic works the same way — switch the assistant to **العربية** (chips at the top of the sheet), or simply type
+Arabic, which is detected automatically. Recognition then uses `ar-EG` and replies are spoken in Arabic:
+
+| قول | النتيجة |
+| --- | --- |
+| “صرفت ٢٥٠ على البقالة” / “دفعت ٩٥٠٠ إيجار” | يسجل مصروف ويستنتج التصنيف |
+| “إيداع ٥٠٠٠ راتب في البنك” | يسجل دخل في الحساب المذكور |
+| “حول ١٠٠٠ من البنك للتوفير” | تحويل بين الحسابات |
+| “حدد ميزانية البقالة ٦٠٠٠” | يحدّث أو ينشئ الميزانية |
+| “ضيف ٥٠٠ لهدف الطوارئ” | يضيف مبلغ للهدف |
+| “فاضل كام في ميزانية البقالة؟” | يقرأ الأرقام |
+| “الوضع الليلي”، “استخدم الدولار”، “الشهر الجاي”، “افتح التحليلات” | يغيّر التطبيق |
+| “نبهني الساعة ٨ مساءً”، “فعل الإشعارات” | يضبط التنبيه اليومي |
+| “تراجع” | يمسح آخر حركة |
+
+The parser normalises Arabic (hamza/alef/yaa/taa-marbuta folding, tashkeel, Arabic-Indic digits ٠-٩, “ألف” as a
+thousand multiplier) and matches categories and accounts with Arabic aliases, so “للتوفير” finds your savings
+account and “البنك” finds the bank account. Arabic listeners use `ar-EG`; replies use an Arabic voice when one is
+installed on the device.
+
 Speech input uses the Web Speech API, so it needs Chrome, Edge or Safari plus microphone permission; every command
 also works by typing, which is the fallback everywhere else. Replies are spoken with `speechSynthesis` while
 **Speak replies** is on. The parser lives in `src/lib/assistant.ts` and returns a plan (`transaction`, `budget`,
 `goal`, `settings`, `navigate`, `delete`, `answer`) that the sheet executes through the normal store actions.
+
+## Insights
+
+Open **Insights** from the Activity screen, the “Details” link on the 6-month cash-flow card, or with the
+assistant (“show insights” / “افتح التحليلات”). For the active month it shows:
+
+- income, expenses, net and savings rate,
+- expenses by category as a horizontal bar chart with amounts and shares,
+- income by source as a doughnut with shares,
+- a day-by-day in/out chart for the month,
+- the biggest individual expenses and income entries,
+- money in and out of every account (transfers included),
+- how spending compares with the previous month.
 
 ## Widgets
 

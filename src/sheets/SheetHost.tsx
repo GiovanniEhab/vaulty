@@ -6,6 +6,7 @@ import ConfirmSheet from './ConfirmSheet';
 import ContributeSheet from './ContributeSheet';
 import DataSheet from './DataSheet';
 import GoalSheet from './GoalSheet';
+import InsightsSheet from './InsightsSheet';
 import RecurringSheet from './RecurringSheet';
 import TransactionSheet from './TransactionSheet';
 import WidgetsSheet from './WidgetsSheet';
@@ -30,6 +31,8 @@ export function SheetHost({ sheet, onClose }: { sheet: SheetState | null; onClos
       return <AssistantSheet onClose={onClose} />;
     case 'widgets':
       return <WidgetsSheet onClose={onClose} />;
+    case 'insights':
+      return <InsightsSheet onClose={onClose} />;
     case 'data':
       return <DataSheet onClose={onClose} />;
     case 'confirm':
