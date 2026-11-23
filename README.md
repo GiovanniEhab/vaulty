@@ -36,12 +36,12 @@ Dependencies are pinned in `package-lock.json`; use `npm ci` for a clean install
 
 ## Android APK
 
-A Capacitor 6 shell in `android/` loads the built web app in a WebView. A prebuilt debug APK is at
-`releases/vaulty-1.1-debug.apk` (package `com.vaulty.app`, version 1.1, minSdk 22, debug-signed so it installs
-directly).
+A Capacitor 6 shell in `android/` loads the built web app in a WebView. A prebuilt APK is at
+`releases/vaulty-1.2-release.apk` (package `com.vaulty.app`, version 1.2, minSdk 22), signed with the project's
+release key, so later versions signed with the same key install straight over it.
 
 ```bash
-adb install -r releases/vaulty-1.1-debug.apk
+adb install -r releases/vaulty-1.2-release.apk
 ```
 
 Or copy the file to the phone, open it, and allow installing from unknown sources.
@@ -52,14 +52,32 @@ Rebuild it (needs JDK 17 and Android SDK platform 34 + build-tools 34.0.0):
 npm install
 npm run android:sync        # build the web app and copy it into android/
 cd android
+./gradlew assembleRelease   # → app/build/outputs/apk/release/app-release.apk
 ./gradlew assembleDebug     # → app/build/outputs/apk/debug/app-debug.apk
 ```
 
 Point Gradle at your SDK with `ANDROID_HOME` or a line `sdk.dir=/path/to/Android/sdk` in
 `android/local.properties`. `npm run android:apk` does the sync and build in one step once those are set.
 
-For a Play Store build, create a keystore, add a `signingConfigs.release` block to
-`android/app/build.gradle`, and run `./gradlew bundleRelease` (`.aab`).
+### Release signing
+
+The signing material is deliberately **not in git**. Two files are needed:
+
+- `android/keystore/vaulty-release.jks` — the keystore (alias `vaulty`, RSA 2048, valid 10,000 days)
+- `android/keystore.properties` — `storeFile`, `storePassword`, `keyAlias`, `keyPassword`
+
+`android/app/build.gradle` reads that properties file when it exists and signs the `release` build type with it;
+without it `assembleRelease` builds unsigned and `assembleDebug` keeps using the debug key. `.gitignore` already
+excludes `android/keystore/`, `android/keystore.properties`, `*.jks` and `*.keystore`.
+
+```bash
+keytool -genkeypair -keystore android/keystore/vaulty-release.jks -alias vaulty \
+  -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Vaulty, O=Vaulty, C=EG"
+```
+
+Keep both files backed up: Android refuses to install an APK whose signing certificate differs from the
+installed app's, so losing the key means users must uninstall before installing the next build. For Play Store
+uploads, run `./gradlew bundleRelease` (`.aab`).
 
 **WebView notes:** Android WebView does not implement the Web Speech API, so the assistant's microphone reports
 “not supported” inside the APK — typed commands (English or Arabic) work exactly the same. Web Notifications are
