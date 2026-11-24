@@ -170,7 +170,7 @@ fun VaultDataPanel(store: VaultStore, update: UpdateState, actions: DataPanelAct
 
         SectionCard {
             SectionTitle("App Updates")
-            Text("Installed: v${update.info?.currentVersion ?: "1.3"}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Installed: v${BuildConfig.VERSION_NAME}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(
                 "Vaulty checks for a newer signed APK, verifies its SHA-256 and opens Android's installer — no GitHub browsing.",
                 fontSize = 10.sp,

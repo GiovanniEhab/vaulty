@@ -135,7 +135,7 @@ fun VaultAssistantPanel(
                 },
                 Modifier.size(58.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
-            ) { Text(iconGlyph("mic"), fontSize = 22.sp) }
+            ) { VaultIcon("mic", tint = Color.White, size = 24.dp) }
             Text("Tap and speak", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
@@ -154,7 +154,7 @@ fun VaultAssistantPanel(
                 singleLine = true,
             )
             Button(onClick = { val value = draft; draft = ""; submit(value) }, Modifier.padding(start = 8.dp)) {
-                Text("➤")
+                VaultIcon("send", tint = Color.White, size = 18.dp)
             }
         }
 

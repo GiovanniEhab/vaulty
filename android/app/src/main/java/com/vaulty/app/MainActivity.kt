@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -385,12 +387,12 @@ private fun VaultHeader(
             Box(
                 Modifier.size(34.dp).clip(RoundedCornerShape(12.dp)).background(Brush.linearGradient(listOf(Color(0xFF10B981), Color(0xFF0F766E)))),
                 contentAlignment = Alignment.Center,
-            ) { Text("◇", color = Color.White, fontSize = 16.sp) }
+            ) { VaultIcon("wallet", tint = Color.White, size = 18.dp) }
             Column(Modifier.weight(1f).padding(horizontal = 8.dp)) {
                 Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                 Text("Net worth: ${formatMoney(netWorth(state), state.currency)}", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            IconButtonBox(glyph = iconGlyph("mic"), tint = Color(0xFF059669)) {
+            IconButtonBox(icon = "mic", tint = Color(0xFF059669)) {
                 onOpenSheet(VaultSheet.Assistant)
             }
             Box {
@@ -404,10 +406,10 @@ private fun VaultHeader(
                     }
                 }
             }
-            IconButtonBox(glyph = if (state.theme == AppTheme.DARK) iconGlyph("sun") else iconGlyph("moon")) {
+            IconButtonBox(icon = if (state.theme == AppTheme.DARK) "sun" else "moon") {
                 store.toggleTheme()
             }
-            IconButtonBox(glyph = iconGlyph("sliders-horizontal")) {
+            IconButtonBox(icon = "sliders-horizontal") {
                 onOpenSheet(VaultSheet.Data)
             }
         }
@@ -415,21 +417,23 @@ private fun VaultHeader(
             Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextButton(onClick = { store.shiftActiveMonth(-1) }) { Text(iconGlyph("chevron-left"), fontSize = 16.sp) }
-            Text(
-                "▦  ${formatMonthLabel(state.activeMonth)}",
+            TextButton(onClick = { store.shiftActiveMonth(-1) }) { VaultIcon("chevron-left", size = 16.dp) }
+            Row(
                 Modifier.weight(1f),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            )
-            TextButton(onClick = { store.shiftActiveMonth(1) }) { Text(iconGlyph("chevron-right"), fontSize = 16.sp) }
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                VaultIcon("calendar", size = 14.dp)
+                Spacer(Modifier.width(6.dp))
+                Text(formatMonthLabel(state.activeMonth), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+            TextButton(onClick = { store.shiftActiveMonth(1) }) { VaultIcon("chevron-right", size = 16.dp) }
         }
     }
 }
 
 @Composable
-private fun IconButtonBox(glyph: String, tint: Color = MaterialTheme.colorScheme.onSurfaceVariant, onClick: () -> Unit) {
+private fun IconButtonBox(icon: String, tint: Color = MaterialTheme.colorScheme.onSurfaceVariant, onClick: () -> Unit) {
     Box(
         Modifier
             .size(32.dp)
@@ -437,7 +441,7 @@ private fun IconButtonBox(glyph: String, tint: Color = MaterialTheme.colorScheme
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
-    ) { Text(glyph, color = tint, fontSize = 14.sp) }
+    ) { VaultIcon(icon, tint = tint, size = 16.dp) }
 }
 
 @Composable
@@ -500,15 +504,15 @@ private fun RowScope.NavButton(target: AppView, current: AppView, onClick: (AppV
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Text(
+        VaultIcon(
             when (target) {
-                AppView.OVERVIEW -> iconGlyph("home")
-                AppView.TRANSACTIONS -> iconGlyph("receipt")
-                AppView.ACCOUNTS -> iconGlyph("landmark")
-                AppView.PLAN -> iconGlyph("pie-chart")
+                AppView.OVERVIEW -> "home"
+                AppView.TRANSACTIONS -> "receipt"
+                AppView.ACCOUNTS -> "landmark"
+                AppView.PLAN -> "pie-chart"
             },
-            color = color,
-            fontSize = 16.sp,
+            tint = color,
+            size = 18.dp,
         )
         Text(target.label, color = color, fontSize = 10.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
     }

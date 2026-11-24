@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -15,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -30,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -69,39 +72,6 @@ sealed interface VaultSheet {
         val confirmLabel: String,
         val onConfirm: () -> Unit,
     ) : VaultSheet
-}
-
-fun iconGlyph(name: String): String = when (name) {
-    "home" -> "⌂"
-    "receipt" -> "▤"
-    "landmark" -> "▣"
-    "pie-chart" -> "◔"
-    "mic" -> "◉"
-    "plus" -> "+"
-    "minus" -> "−"
-    "transfer", "arrow-left-right" -> "↔"
-    "repeat" -> "↻"
-    "sliders-horizontal" -> "⚙"
-    "sun" -> "☀"
-    "moon" -> "☾"
-    "chevron-left" -> "‹"
-    "chevron-right" -> "›"
-    "calendar" -> "▦"
-    "sparkles" -> "✦"
-    "download" -> "↓"
-    "upload" -> "↑"
-    "search" -> "⌕"
-    "bell" -> "♟"
-    "cloud" -> "☁"
-    "cloud-off" -> "☁̸"
-    "wallet" -> "◇"
-    "pencil" -> "✎"
-    "trash-2" -> "⌫"
-    "send" -> "➤"
-    "volume-2" -> "♪"
-    "volume-x" -> "♪̸"
-    "layout-grid" -> "▦"
-    else -> "•"
 }
 
 @Composable
@@ -168,17 +138,21 @@ fun <T> VaultSelect(
     var expanded by remember { mutableStateOf(false) }
     val selectedLabel = options.firstOrNull { it.first == value }?.second ?: value.toString()
     Box(modifier) {
-        OutlinedTextField(
-            value = selectedLabel,
-            onValueChange = {},
-            label = { Text(label) },
-            readOnly = true,
+        // An OutlinedTextField consumes taps before a parent clickable sees them, so
+        // selectors use a real button as the dropdown anchor.
+        OutlinedButton(
+            onClick = { expanded = true },
             enabled = enabled,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(enabled = enabled) { expanded = true },
-            trailingIcon = { Text("▾") },
-        )
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+        ) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(label, fontSize = 9.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(selectedLabel, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            VaultIcon("chevron-down", size = 14.dp)
+        }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { (option, text) ->
                 DropdownMenuItem(

@@ -89,7 +89,7 @@ private fun DemoBanner(store: VaultStore, actions: ViewActions) {
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("✦", color = Color(0xFF059669))
+        VaultIcon("sparkles", tint = Color(0xFF059669), size = 14.dp)
         Spacer(Modifier.width(8.dp))
         Text(
             "Demo data loaded. Tap Start Fresh when ready.",
@@ -104,7 +104,7 @@ private fun DemoBanner(store: VaultStore, actions: ViewActions) {
                 "Clear All",
             ) { store.startFresh() }
         }) { Text("Start Fresh", fontSize = 11.sp) }
-        TextButton(onClick = { store.dismissDemoBanner() }) { Text("✕") }
+        TextButton(onClick = { store.dismissDemoBanner() }) { VaultIcon("x", size = 14.dp) }
     }
 }
 
@@ -178,7 +178,7 @@ private fun OverviewView(store: VaultStore, actions: ViewActions) {
                         Box(
                             Modifier.size(28.dp).clip(RoundedCornerShape(9.dp)).background(colorFromHex(account.color)),
                             contentAlignment = Alignment.Center,
-                        ) { Text("◇", color = Color.White, fontSize = 13.sp) }
+                        ) { VaultIcon("wallet", tint = Color.White, size = 14.dp) }
                         Spacer(Modifier.height(10.dp))
                         Text(account.name, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(
@@ -329,17 +329,17 @@ fun WidgetStripView(store: VaultStore, actions: ViewActions) {
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 state.widgetIds.forEach { widget ->
                     val card = when (widget) {
-                        WidgetId.MONTH -> WidgetCard("This month", "▤", Color(0xFFF43F5E), formatMoney(stats.expense, state.currency), "in ${formatMoney(stats.income, state.currency)}", null) { actions.setView(AppView.TRANSACTIONS) }
+                        WidgetId.MONTH -> WidgetCard("This month", "calendar", Color(0xFFF43F5E), formatMoney(stats.expense, state.currency), "in ${formatMoney(stats.income, state.currency)}", null) { actions.setView(AppView.TRANSACTIONS) }
                         WidgetId.BUDGET -> if (topBudget != null) {
                             val ratio = if (topBudget.first.limit > 0) topBudget.second / topBudget.first.limit else 0.0
-                            WidgetCard("Top budget", "◔", colorFromHex(VaultConstants.categoryMeta(topBudget.first.category).color), "${(ratio * 100).toInt().coerceAtMost(999)}% used", "${topBudget.first.category} · ${formatMoney(topBudget.second, state.currency)}", ratio.toFloat().coerceIn(0f, 1f)) { actions.goToPlan(PlanTab.BUDGETS) }
-                        } else WidgetCard("Top budget", "◔", Color(0xFFF59E0B), "No budgets", "Tap to set one", null) { actions.goToPlan(PlanTab.BUDGETS) }
+                            WidgetCard("Top budget", "pie-chart", colorFromHex(VaultConstants.categoryMeta(topBudget.first.category).color), "${(ratio * 100).toInt().coerceAtMost(999)}% used", "${topBudget.first.category} · ${formatMoney(topBudget.second, state.currency)}", ratio.toFloat().coerceIn(0f, 1f)) { actions.goToPlan(PlanTab.BUDGETS) }
+                        } else WidgetCard("Top budget", "pie-chart", Color(0xFFF59E0B), "No budgets", "Tap to set one", null) { actions.goToPlan(PlanTab.BUDGETS) }
                         WidgetId.GOAL -> if (topGoal != null) {
                             val ratio = if (topGoal.target > 0) topGoal.current / topGoal.target else 0.0
-                            WidgetCard("Top goal", "◇", colorFromHex(topGoal.color), "${(ratio * 100).toInt().coerceAtMost(999)}% saved", topGoal.name, ratio.toFloat().coerceIn(0f, 1f)) { actions.goToPlan(PlanTab.GOALS) }
-                        } else WidgetCard("Top goal", "◇", Color(0xFF6366F1), "No goals", "Tap to create one", null) { actions.goToPlan(PlanTab.GOALS) }
-                        WidgetId.VOICE -> WidgetCard("Assistant", "◉", Color(0xFF059669), "Ask Vaulty", "Speak a command", null) { actions.openSheet(VaultSheet.Assistant) }
-                        WidgetId.NET_WORTH -> WidgetCard("Net worth", "◇", Color(0xFF059669), formatMoney(net, state.currency), "${state.accounts.size} accounts", null) { actions.setView(AppView.ACCOUNTS) }
+                            WidgetCard("Top goal", "wallet", colorFromHex(topGoal.color), "${(ratio * 100).toInt().coerceAtMost(999)}% saved", topGoal.name, ratio.toFloat().coerceIn(0f, 1f)) { actions.goToPlan(PlanTab.GOALS) }
+                        } else WidgetCard("Top goal", "wallet", Color(0xFF6366F1), "No goals", "Tap to create one", null) { actions.goToPlan(PlanTab.GOALS) }
+                        WidgetId.VOICE -> WidgetCard("Assistant", "mic", Color(0xFF059669), "Ask Vaulty", "Speak a command", null) { actions.openSheet(VaultSheet.Assistant) }
+                        WidgetId.NET_WORTH -> WidgetCard("Net worth", "wallet", Color(0xFF059669), formatMoney(net, state.currency), "${state.accounts.size} accounts", null) { actions.setView(AppView.ACCOUNTS) }
                     }
                     WidgetCardView(card)
                 }
@@ -371,7 +371,7 @@ private fun WidgetCardView(card: WidgetCard) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(card.label.uppercase(), modifier = Modifier.weight(1f), fontSize = 9.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Box(Modifier.size(24.dp).clip(RoundedCornerShape(8.dp)).background(card.accent.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
-                Text(card.icon, color = card.accent, fontSize = 12.sp)
+                VaultIcon(card.icon, tint = card.accent, size = 13.dp)
             }
         }
         Spacer(Modifier.height(10.dp))
@@ -401,7 +401,7 @@ fun TransactionRow(tx: Transaction, state: VaultState, actions: ViewActions, all
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(34.dp).clip(RoundedCornerShape(12.dp)).background(color.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
-            Text(iconGlyph(meta.icon), color = color, fontSize = 14.sp)
+            VaultIcon(meta.icon, tint = color, size = 16.dp)
         }
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
@@ -419,7 +419,7 @@ fun TransactionRow(tx: Transaction, state: VaultState, actions: ViewActions, all
                 actions.confirm("Delete Transaction?", "Remove this transaction and recalculate your balance?", "Delete") {
                     actions.deleteTransaction(tx.id)
                 }
-            }) { Text("✕", fontSize = 10.sp) }
+            }) { VaultIcon("x", size = 12.dp) }
         }
     }
 }
@@ -456,7 +456,7 @@ private fun ActivityView(store: VaultStore, actions: ViewActions) {
             value = search,
             onValueChange = { search = it },
             placeholder = { Text("Search merchant, category, notes...") },
-            leadingIcon = { Text(iconGlyph("search")) },
+            leadingIcon = { VaultIcon("search", size = 16.dp) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
@@ -518,7 +518,12 @@ private fun AccountsView(store: VaultStore, actions: ViewActions) {
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            OutlinedButton(onClick = { actions.openSheet(VaultSheet.Tx(defaultType = TxType.TRANSFER)) }, Modifier.weight(1f)) { Text("↔ Transfer", fontSize = 11.sp) }
+            OutlinedButton(onClick = { actions.openSheet(VaultSheet.Tx(defaultType = TxType.TRANSFER)) }, Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    VaultIcon("arrow-left-right", size = 13.dp)
+                    Text("Transfer", fontSize = 11.sp)
+                }
+            }
             Button(onClick = { actions.openSheet(VaultSheet.Account()) }, Modifier.weight(1f)) { Text("+ New Account", fontSize = 11.sp) }
         }
         state.accounts.forEach { account ->
@@ -527,7 +532,7 @@ private fun AccountsView(store: VaultStore, actions: ViewActions) {
             SectionCard {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(44.dp).clip(RoundedCornerShape(16.dp)).background(colorFromHex(account.color)), contentAlignment = Alignment.Center) {
-                        Text("◇", color = Color.White, fontSize = 18.sp)
+                        VaultIcon("wallet", tint = Color.White, size = 20.dp)
                     }
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
@@ -537,14 +542,14 @@ private fun AccountsView(store: VaultStore, actions: ViewActions) {
                     Column(horizontalAlignment = Alignment.End) {
                         Text(formatMoney(balance, state.currency), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = if (balance < 0) Color(0xFFE11D48) else MaterialTheme.colorScheme.onSurface)
                         Row {
-                            TextButton(onClick = { actions.openSheet(VaultSheet.Account(account.id)) }) { Text("✎", fontSize = 11.sp) }
+                            TextButton(onClick = { actions.openSheet(VaultSheet.Account(account.id)) }) { VaultIcon("pencil", size = 14.dp) }
                             TextButton(onClick = {
                                 if (state.accounts.size <= 1) {
                                     actions.confirm("Keep at least one account", "You need one account to log transactions against. Add another account first.", "Got it") {}
                                 } else {
                                     actions.confirm("Delete Account?", "Delete \"${account.name}\" and every transaction tied to it? This cannot be undone.", "Delete") { store.deleteAccount(account.id) }
                                 }
-                            }) { Text("⌫", fontSize = 11.sp) }
+                            }) { VaultIcon("trash-2", size = 14.dp) }
                         }
                     }
                 }
@@ -613,17 +618,17 @@ private fun BudgetsTab(store: VaultStore, actions: ViewActions) {
             SectionCard {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(32.dp).clip(RoundedCornerShape(10.dp)).background(colorFromHex(meta.color).copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
-                        Text(iconGlyph(meta.icon), color = colorFromHex(meta.color), fontSize = 14.sp)
+                        VaultIcon(meta.icon, tint = colorFromHex(meta.color), size = 16.dp)
                     }
                     Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
                         Text(budget.category, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                         Text("${formatMoney(spent, state.currency)} of ${formatMoney(budget.limit, state.currency)}", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    TextButton(onClick = { actions.openSheet(VaultSheet.Budget(budget.id)) }) { Text("✎", fontSize = 11.sp) }
+                    TextButton(onClick = { actions.openSheet(VaultSheet.Budget(budget.id)) }) { VaultIcon("pencil", size = 14.dp) }
                     TextButton(onClick = {
                         actions.confirm("Remove budget?", "Remove the ${budget.category} budget? Your transactions are not affected.", "Remove") { store.deleteBudget(budget.id) }
-                    }) { Text("⌫", fontSize = 11.sp) }
+                    }) { VaultIcon("trash-2", size = 14.dp) }
                 }
                 VaultProgress(ratio, if (left < 0) Color(0xFFF43F5E) else if (ratio >= 0.75f) Color(0xFFF59E0B) else Color(0xFF10B981))
                 Text(
@@ -661,8 +666,8 @@ private fun GoalsTab(store: VaultStore, actions: ViewActions) {
                         Text(goal.name, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                         Text(if (goal.deadline.isNotBlank()) "Target: ${goal.deadline}" else "No target date", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    TextButton(onClick = { actions.openSheet(VaultSheet.Goal(goal.id)) }) { Text("✎", fontSize = 11.sp) }
-                    TextButton(onClick = { actions.confirm("Delete Goal?", "Remove \"${goal.name}\"? Your accounts and transactions stay untouched.", "Delete") { store.deleteGoal(goal.id) } }) { Text("⌫", fontSize = 11.sp) }
+                    TextButton(onClick = { actions.openSheet(VaultSheet.Goal(goal.id)) }) { VaultIcon("pencil", size = 14.dp) }
+                    TextButton(onClick = { actions.confirm("Delete Goal?", "Remove \"${goal.name}\"? Your accounts and transactions stay untouched.", "Delete") { store.deleteGoal(goal.id) } }) { VaultIcon("trash-2", size = 14.dp) }
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
                     Text(formatMoney(goal.current, state.currency), fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
@@ -700,7 +705,7 @@ private fun RecurringTab(store: VaultStore, actions: ViewActions) {
             SectionCard {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(36.dp).clip(RoundedCornerShape(12.dp)).background(colorFromHex(meta.color).copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
-                        Text(iconGlyph(meta.icon), color = colorFromHex(meta.color), fontSize = 14.sp)
+                        VaultIcon(meta.icon, tint = colorFromHex(meta.color), size = 16.dp)
                     }
                     Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
@@ -714,7 +719,7 @@ private fun RecurringTab(store: VaultStore, actions: ViewActions) {
                     }
                     TextButton(onClick = {
                         actions.confirm("Remove recurring item?", "Stop tracking \"${item.title}\"? Transactions already logged stay in your ledger.", "Remove") { store.deleteRecurring(item.id) }
-                    }) { Text("⌫", fontSize = 11.sp) }
+                    }) { VaultIcon("trash-2", size = 14.dp) }
                 }
             }
         }

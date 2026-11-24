@@ -400,7 +400,7 @@ private fun InsightsSheet(store: VaultStore) {
                 Text(formatMonthLabel(state.activeMonth), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Text("Charts for every expense and income category", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text("◔", fontSize = 20.sp, color = Color(0xFF059669))
+            VaultIcon("pie-chart", tint = Color(0xFF059669), size = 20.dp)
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             InsightTile("Income", formatMoney(stats.income, state.currency), Color(0xFF059669), Modifier.weight(1f))
