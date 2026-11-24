@@ -7,5 +7,5 @@
     <!-- localStorage / IndexedDB used by the Capacitor WebView. -->
     <include domain="root" path="app_webview/" />
     <exclude domain="file" path="updates/" />
-    <exclude domain="cache" path="." />
+    <exclude domain="file" path="cache/" />
 </full-backup-content>
