@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Icon from './components/Icon';
+import Select from './components/Select';
 import Toasts from './components/Toasts';
 import { CURRENCIES, CURRENCY_CODES } from './lib/constants';
 import { formatMoney, formatMonthLabel } from './lib/format';
-import { checkNotifications } from './lib/notifications';
+import { checkNotifications, syncScheduledNotifications } from './lib/notifications';
 import { toast } from './lib/toast';
 import { autoCheckForUpdates, downloadAndInstall, useUpdateState } from './lib/updater';
 import type { CurrencyCode, PlanTab, ViewName } from './lib/types';
@@ -54,18 +55,34 @@ function Shell() {
     return () => document.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  /* Android app: look for a new APK at launch (throttled) and install it when auto-update is on. */
+  /* Android app: look for a new APK at launch, when Vaulty comes back to the foreground
+     (throttled to once every six hours) and install it when auto-update is on. */
   useEffect(() => {
-    void autoCheckForUpdates(state.autoUpdate);
+    const check = () => void autoCheckForUpdates(state.autoUpdate);
+    check();
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') check();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
   }, [state.autoUpdate]);
 
   /* Local alerts for budgets, bills and the daily check-in. */
   useEffect(() => {
     if (!state.notificationsEnabled) return;
-    checkNotifications(state);
-    const timer = window.setInterval(() => checkNotifications(state), 60_000);
+    void checkNotifications(state);
+    const timer = window.setInterval(() => void checkNotifications(state), 60_000);
     return () => window.clearInterval(timer);
   }, [state]);
+
+  /* Android: keep the native daily and bill reminders in sync with the ledger. */
+  const recurringScheduleKey = state.recurring
+    .map((item) => `${item.id}:${item.dayOfMonth}:${item.lastLoggedMonth}:${item.amount}:${item.type}`)
+    .join('|');
+  useEffect(() => {
+    void syncScheduledNotifications(state);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.notificationsEnabled, state.reminderHour, state.currency, recurringScheduleKey]);
 
   const ui: UIActions = useMemo(
     () => ({
@@ -130,21 +147,18 @@ function Shell() {
                 <Icon name="mic" className="h-4 w-4" />
               </button>
 
-              <select
+              <Select
                 value={state.currency}
-                onChange={(event) => {
-                  setCurrency(event.target.value as CurrencyCode);
-                  toast(`Currency: ${event.target.value}`);
+                onChange={(value) => {
+                  setCurrency(value as CurrencyCode);
+                  toast(`Currency: ${value}`);
                 }}
-                aria-label="Select currency"
-                className="h-8 rounded-xl border border-slate-200/70 bg-slate-100 px-2 text-[11px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700/70 dark:bg-slate-800 dark:text-slate-200"
-              >
-                {CURRENCY_CODES.map((code) => (
-                  <option key={code} value={code}>
-                    {CURRENCIES[code].code}
-                  </option>
-                ))}
-              </select>
+                ariaLabel="Select currency"
+                variant="compact"
+                align="right"
+                className="min-w-[3.4rem]"
+                options={CURRENCY_CODES.map((code) => ({ value: code, label: CURRENCIES[code].code }))}
+              />
 
               <button
                 type="button"

@@ -46,15 +46,13 @@ export function BudgetSheet({ id, onClose }: { id?: string; onClose: () => void 
           label="Category"
           value={category}
           disabled={Boolean(existing)}
-          className={`h-11 ${existing ? 'opacity-60' : ''}`}
-          onChange={(event) => setCategory(event.target.value)}
-        >
-          {(existing ? [{ id: existing.category }] : available).map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.id}
-            </option>
-          ))}
-        </SelectField>
+          className={existing ? 'opacity-60' : ''}
+          onChange={setCategory}
+          options={(existing ? [{ id: existing.category }] : available).map((item) => ({
+            value: item.id,
+            label: item.id,
+          }))}
+        />
 
         <MoneyField label={`Monthly Limit (${state.currency})`} value={limit} onChange={setLimit} />
 

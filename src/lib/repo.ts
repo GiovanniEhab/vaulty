@@ -170,6 +170,7 @@ class FirebaseRepo implements Repo {
               ? (data.widgetIds as WidgetId[])
               : ['netWorth', 'month', 'budget', 'voice'],
             assistantLanguage: data.assistantLanguage === 'ar' ? 'ar' : 'en',
+            autoUpdate: data.autoUpdate !== false,
           });
         },
         (error) => onError(error.message),

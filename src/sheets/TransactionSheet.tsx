@@ -128,31 +128,24 @@ export function TransactionSheet({
           <SelectField
             label={type === 'transfer' ? 'From' : 'Account'}
             value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
-          >
-            {state.accounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name}
-              </option>
-            ))}
-          </SelectField>
+            onChange={setAccountId}
+            options={state.accounts.map((account) => ({ value: account.id, label: account.name }))}
+          />
 
           {type === 'transfer' ? (
-            <SelectField label="To Account" value={toAccountId} onChange={(e) => setToAccountId(e.target.value)}>
-              {state.accounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name}
-                </option>
-              ))}
-            </SelectField>
+            <SelectField
+              label="To Account"
+              value={toAccountId}
+              onChange={setToAccountId}
+              options={state.accounts.map((account) => ({ value: account.id, label: account.name }))}
+            />
           ) : (
-            <SelectField label="Category" value={category} onChange={(e) => setCategory(e.target.value)}>
-              {categoryPool.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.id}
-                </option>
-              ))}
-            </SelectField>
+            <SelectField
+              label="Category"
+              value={category}
+              onChange={setCategory}
+              options={categoryPool.map((item) => ({ value: item.id, label: item.id }))}
+            />
           )}
         </div>
 

@@ -1,9 +1,18 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Switch } from '../components/Field';
 import Icon from '../components/Icon';
+import Select from '../components/Select';
 import Sheet from '../components/Sheet';
 import { downloadFile, toCsv } from '../lib/download';
-import { notificationPermission, notificationsSupported, requestNotificationPermission } from '../lib/notifications';
+import {
+  exactAlarmPermission,
+  notificationPermission,
+  notificationsSupported,
+  requestExactAlarmAccess,
+  requestNotificationPermission,
+  sendTestNotification,
+  type NotificationPermissionState,
+} from '../lib/notifications';
 import { toast } from '../lib/toast';
 import { checkForUpdates, downloadAndInstall, isAndroidApp, useUpdateState } from '../lib/updater';
 import { useVault } from '../store/VaultContext';
@@ -57,6 +66,13 @@ function UpdateSection() {
         </p>
       ) : null}
 
+      {android && update.info?.updateAvailable && update.info.installAllowed === false ? (
+        <p className="rounded-xl bg-amber-50 px-3 py-2 text-[10px] leading-relaxed text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+          Android requires you to allow <strong>Install unknown apps</strong> for Vaulty once. Tap Install and Vaulty
+          opens the right settings screen; your data is kept when the new version installs over this one.
+        </p>
+      ) : null}
+
       {update.info?.notes && update.status === 'available' ? (
         <p className="max-h-24 overflow-y-auto whitespace-pre-line rounded-xl bg-white px-3 py-2 text-[10px] leading-relaxed text-slate-500 dark:bg-slate-900 dark:text-slate-400">
           {update.info.notes.slice(0, 600)}
@@ -103,7 +119,30 @@ export function DataSheet({ onClose }: { onClose: () => void }) {
   const { state, sync, importState, startFresh, restoreSample, updateSettings } = useVault();
   const { confirm } = useUI();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [permission, setPermission] = useState(notificationPermission());
+  const [permission, setPermission] = useState<NotificationPermissionState>('prompt');
+  const [exactAlarm, setExactAlarm] = useState<NotificationPermissionState>('unsupported');
+  const nativeAndroid = isAndroidApp();
+
+  useEffect(() => {
+    let alive = true;
+    const refresh = () => {
+      void notificationPermission().then((next) => {
+        if (alive) setPermission(next);
+      });
+      void exactAlarmPermission().then((next) => {
+        if (alive) setExactAlarm(next);
+      });
+    };
+    refresh();
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    window.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      alive = false;
+      window.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
 
   const toggleNotifications = async (next: boolean) => {
     if (!next) {
@@ -111,18 +150,36 @@ export function DataSheet({ onClose }: { onClose: () => void }) {
       return;
     }
     const granted = await requestNotificationPermission();
-    setPermission(notificationPermission());
+    const current = await notificationPermission();
+    setPermission(current);
     updateSettings({ notificationsEnabled: granted });
-    if (!granted) toast('Notifications are blocked in this browser.', 'error');
+    if (!granted) {
+      toast(
+        current === 'denied'
+          ? `Notifications are blocked. Allow them for Vaulty in ${nativeAndroid ? 'Android settings' : 'your browser settings'}.`
+          : 'Notifications were not allowed.',
+        'error',
+      );
+    }
+  };
+
+  const sendTest = async () => {
+    const ok = await sendTestNotification();
+    toast(
+      ok ? 'Test notification sent — check your notification shade.' : 'Could not send a notification. Check the permission first.',
+      ok ? 'default' : 'error',
+    );
   };
 
   const notificationStatus = !notificationsSupported()
-    ? 'Notifications are not supported in this browser.'
+    ? 'Notifications are not supported on this device.'
     : permission === 'denied'
-      ? 'Blocked — allow notifications for this site in your browser settings.'
+      ? `Blocked — allow notifications for Vaulty in ${nativeAndroid ? 'Android settings' : 'your browser settings'}.`
       : state.notificationsEnabled
-        ? 'On. Budget alerts, due bills and your daily check-in fire while Vaulty is open.'
-        : 'Get budget alerts, due-bill reminders and a daily check-in while Vaulty is open.';
+        ? nativeAndroid
+          ? 'On. Bill reminders and your daily check-in are scheduled on this phone, even when Vaulty is closed. Budget alerts fire while it is open.'
+          : 'On. Budget alerts, due bills and your daily check-in fire while Vaulty is open.'
+        : 'Get budget alerts, bill reminders and a daily check-in.';
 
   const hourLabel = (hour: number) => `${hour % 12 === 0 ? 12 : hour % 12} ${hour < 12 ? 'AM' : 'PM'}`;
 
@@ -259,21 +316,46 @@ export function DataSheet({ onClose }: { onClose: () => void }) {
             />
           </div>
           <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">{notificationStatus}</p>
-          <div className="flex items-center justify-between rounded-xl bg-white px-3 py-2 dark:bg-slate-900">
-            <span className="text-[11px] font-semibold">Daily check-in</span>
-            <select
-              value={state.reminderHour}
-              disabled={!state.notificationsEnabled}
-              onChange={(event) => updateSettings({ reminderHour: Number(event.target.value) })}
-              aria-label="Daily reminder time"
-              className="bg-transparent text-[11px] font-semibold text-slate-600 focus:outline-none disabled:opacity-40 dark:text-slate-300"
+          {state.notificationsEnabled && permission === 'granted' ? (
+            <button
+              type="button"
+              onClick={() => void sendTest()}
+              className="h-9 w-full rounded-xl border border-slate-200 bg-white text-[11px] font-semibold text-slate-700 active:scale-[0.99] dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
             >
-              {Array.from({ length: 24 }, (_, hour) => hour).map((hour) => (
-                <option key={hour} value={hour}>
-                  {hourLabel(hour)}
-                </option>
-              ))}
-            </select>
+              Send test notification
+            </button>
+          ) : null}
+          {nativeAndroid && state.notificationsEnabled && permission === 'granted' && (exactAlarm === 'denied' || exactAlarm === 'prompt') ? (
+            <div className="space-y-1.5 rounded-xl bg-amber-50 px-3 py-2 text-[10px] leading-relaxed text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">
+              <p>
+                Allow exact timing so the daily check-in and bill reminders arrive at the hour you chose. Otherwise
+                Android may deliver them later.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  void requestExactAlarmAccess().then((granted) => {
+                    void exactAlarmPermission().then(setExactAlarm);
+                    toast(granted ? 'Exact reminder timing enabled.' : 'Exact timing was not enabled.', granted ? 'default' : 'error');
+                  });
+                }}
+                className="rounded-lg bg-amber-600 px-2.5 py-1 font-semibold text-white"
+              >
+                Allow exact timing
+              </button>
+            </div>
+          ) : null}
+          <div className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2 dark:bg-slate-900">
+            <span className="text-[11px] font-semibold">Daily check-in</span>
+            <Select
+              value={String(state.reminderHour)}
+              disabled={!state.notificationsEnabled}
+              onChange={(value) => updateSettings({ reminderHour: Number(value) })}
+              ariaLabel="Daily reminder time"
+              variant="compact"
+              align="right"
+              options={Array.from({ length: 24 }, (_, hour) => ({ value: String(hour), label: hourLabel(hour) }))}
+            />
           </div>
         </section>
 

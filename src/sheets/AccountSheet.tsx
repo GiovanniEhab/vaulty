@@ -46,13 +46,12 @@ export function AccountSheet({ id, onClose }: { id?: string; onClose: () => void
         />
 
         <div className="grid grid-cols-2 gap-2.5">
-          <SelectField label="Type" value={type} onChange={(event) => setType(event.target.value as AccountType)}>
-            {ACCOUNT_TYPES.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </SelectField>
+          <SelectField
+            label="Type"
+            value={type}
+            onChange={(value) => setType(value as AccountType)}
+            options={ACCOUNT_TYPES.map((option) => ({ value: option.value, label: option.label }))}
+          />
           <MoneyField label="Opening Balance" value={initialBalance} onChange={setInitialBalance} />
         </div>
 

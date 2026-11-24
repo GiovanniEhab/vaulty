@@ -75,12 +75,12 @@ export function RecurringSheet({ onClose }: { onClose: () => void }) {
           <SelectField
             label="Type"
             value={type}
-            className="h-11 px-2"
-            onChange={(event) => changeType(event.target.value as 'income' | 'expense')}
-          >
-            <option value="expense">Expense</option>
-            <option value="income">Income</option>
-          </SelectField>
+            onChange={(value) => changeType(value as 'income' | 'expense')}
+            options={[
+              { value: 'expense', label: 'Expense' },
+              { value: 'income', label: 'Income' },
+            ]}
+          />
           <MoneyField label="Amount" value={amount} onChange={setAmount} />
           <TextField
             label="Day"
@@ -94,20 +94,18 @@ export function RecurringSheet({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="grid grid-cols-2 gap-2.5">
-          <SelectField label="Account" value={accountId} onChange={(event) => setAccountId(event.target.value)}>
-            {state.accounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name}
-              </option>
-            ))}
-          </SelectField>
-          <SelectField label="Category" value={category} onChange={(event) => setCategory(event.target.value)}>
-            {pool.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.id}
-              </option>
-            ))}
-          </SelectField>
+          <SelectField
+            label="Account"
+            value={accountId}
+            onChange={setAccountId}
+            options={state.accounts.map((account) => ({ value: account.id, label: account.name }))}
+          />
+          <SelectField
+            label="Category"
+            value={category}
+            onChange={setCategory}
+            options={pool.map((item) => ({ value: item.id, label: item.id }))}
+          />
         </div>
 
         <PrimaryButton>Save Recurring</PrimaryButton>

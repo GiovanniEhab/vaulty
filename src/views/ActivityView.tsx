@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import Icon from '../components/Icon';
+import Select from '../components/Select';
 import TransactionRow from '../components/TransactionRow';
 import { ALL_CATEGORIES } from '../lib/constants';
 import { downloadFile, toCsv } from '../lib/download';
@@ -99,38 +100,39 @@ export function ActivityView() {
         </div>
 
         <div className="grid grid-cols-3 gap-2">
-          <select
+          <Select
             value={period}
-            onChange={(event) => setPeriod(event.target.value as 'activeMonth' | 'all')}
-            className="h-8 rounded-xl border border-slate-200 bg-white px-2 text-[11px] font-medium dark:border-slate-800 dark:bg-slate-900"
-          >
-            <option value="activeMonth">{formatMonthLabel(state.activeMonth)}</option>
-            <option value="all">All Time</option>
-          </select>
-          <select
+            onChange={(value) => setPeriod(value as 'activeMonth' | 'all')}
+            ariaLabel="Filter by period"
+            variant="compact"
+            className="w-full bg-white dark:bg-slate-900"
+            options={[
+              { value: 'activeMonth', label: formatMonthLabel(state.activeMonth) },
+              { value: 'all', label: 'All Time' },
+            ]}
+          />
+          <Select
             value={accountId}
-            onChange={(event) => setAccountId(event.target.value)}
-            className="h-8 rounded-xl border border-slate-200 bg-white px-2 text-[11px] font-medium dark:border-slate-800 dark:bg-slate-900"
-          >
-            <option value="all">All Accounts</option>
-            {state.accounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name}
-              </option>
-            ))}
-          </select>
-          <select
+            onChange={setAccountId}
+            ariaLabel="Filter by account"
+            variant="compact"
+            className="w-full bg-white dark:bg-slate-900"
+            options={[
+              { value: 'all', label: 'All Accounts' },
+              ...state.accounts.map((account) => ({ value: account.id, label: account.name })),
+            ]}
+          />
+          <Select
             value={category}
-            onChange={(event) => setCategory(event.target.value)}
-            className="h-8 rounded-xl border border-slate-200 bg-white px-2 text-[11px] font-medium dark:border-slate-800 dark:bg-slate-900"
-          >
-            <option value="all">All Categories</option>
-            {ALL_CATEGORIES.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+            onChange={setCategory}
+            ariaLabel="Filter by category"
+            variant="compact"
+            className="w-full bg-white dark:bg-slate-900"
+            options={[
+              { value: 'all', label: 'All Categories' },
+              ...ALL_CATEGORIES.map((option) => ({ value: option, label: option })),
+            ]}
+          />
         </div>
 
         <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-[11px] dark:border-slate-800 dark:bg-slate-900">
@@ -143,16 +145,19 @@ export function ActivityView() {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <select
+            <Select
               value={sort}
-              onChange={(event) => setSort(event.target.value as SortKey)}
-              className="bg-transparent text-[11px] font-semibold text-slate-500 focus:outline-none dark:text-slate-400"
-            >
-              <option value="date_desc">Newest</option>
-              <option value="date_asc">Oldest</option>
-              <option value="amount_desc">Highest</option>
-              <option value="amount_asc">Lowest</option>
-            </select>
+              onChange={(value) => setSort(value as SortKey)}
+              ariaLabel="Sort transactions"
+              variant="bare"
+              align="right"
+              options={[
+                { value: 'date_desc', label: 'Newest' },
+                { value: 'date_asc', label: 'Oldest' },
+                { value: 'amount_desc', label: 'Highest' },
+                { value: 'amount_asc', label: 'Lowest' },
+              ]}
+            />
             <button
               type="button"
               onClick={() => openSheet({ kind: 'insights' })}

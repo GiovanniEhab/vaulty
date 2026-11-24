@@ -12,6 +12,7 @@ import { computeBalances } from '../lib/calc';
 import { dateInMonth, makeId, todayISO } from '../lib/format';
 import { connectFirebase, LocalRepo, pickSettings, type Repo, type SyncInfo } from '../lib/repo';
 import { emptyState, normalizeState, sampleState } from '../lib/seed';
+import { BACKUP_KEY, PRE_UPDATE_BACKUP_KEY, STORAGE_KEY } from '../lib/storage';
 import { toast } from '../lib/toast';
 import type {
   Account,
@@ -26,23 +27,36 @@ import type {
   VaultState,
 } from '../lib/types';
 
-const STORAGE_KEY = 'vaulty_state_v1';
-
-function readLocal(): VaultState | null {
+function parseState(raw: string | null): VaultState | null {
+  if (!raw) return null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
     return normalizeState(JSON.parse(raw), sampleState());
   } catch {
     return null;
   }
 }
 
+function readLocal(): VaultState | null {
+  return (
+    parseState(localStorage.getItem(STORAGE_KEY)) ??
+    parseState(localStorage.getItem(BACKUP_KEY)) ??
+    parseState(localStorage.getItem(PRE_UPDATE_BACKUP_KEY))
+  );
+}
+
 function writeLocal(state: VaultState): void {
+  const serialized = JSON.stringify(state);
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(STORAGE_KEY, serialized);
   } catch {
     /* storage full or blocked — the app still works in memory */
+  }
+  // Keep a second copy in sync. Android updates preserve localStorage, but this also
+  // protects against a single corrupted key or a WebView storage hiccup.
+  try {
+    localStorage.setItem(BACKUP_KEY, serialized);
+  } catch {
+    /* the primary copy is already saved */
   }
 }
 
@@ -112,6 +126,9 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         if (!repo) return;
         repoRef.current = repo;
         setSync(repo.info);
+        // Seed before subscribing: the first collection snapshots can arrive empty,
+        // and applying those patches first would wipe the on-device ledger.
+        await repo.seedIfEmpty(stateRef.current);
         unsubscribe = repo.subscribe(
           (patch) => {
             setState((prev) => {
@@ -131,7 +148,6 @@ export function VaultProvider({ children }: { children: ReactNode }) {
             toast(`Firestore: ${message}`, 'error');
           },
         );
-        await repo.seedIfEmpty(stateRef.current);
       } catch (error) {
         if (!alive) return;
         const message = error instanceof Error ? error.message : 'Could not reach Firebase.';

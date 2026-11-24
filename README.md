@@ -1,15 +1,17 @@
 # Vaulty
 
 A mobile-first personal money manager: accounts, transactions, budgets, savings goals and recurring bills.
-Install it on your phone (PWA) or run it in the browser. Data lives on the device first and — once you plug in
-your own Firebase project — syncs to **your** Firestore database.
 
-Built with React + TypeScript + Vite, Tailwind CSS, Chart.js and the Firebase Web SDK.
+The Android app is now a **native Kotlin / Jetpack Compose** application. The WebView is no longer used for any
+screen; it is consulted once only to migrate the old Capacitor app's `localStorage` ledger. Data is local-first and
+survives in-place APK updates. There is no hosted website and no Firebase configuration in this repository.
+
+The former React source under `src/` is kept as a reference/development playground; it is **not** part of the APK.
 
 ## Features
 
 - **Home** — net worth, monthly income/expenses, savings rate, wallets carousel, spending breakdown doughnut,
-  6-month cash-flow chart, budget pulse, recent activity.
+  6-month cash-flow chart, budget pulse, recent activity and configurable in-app widgets.
 - **Activity** — full-text search, type/account/category/month filters, sorting, running in/out totals, CSV export,
   tap a row to edit, delete with confirmation.
 - **Accounts** — checking / cash / savings / credit accounts with opening balances, assets vs liabilities,
@@ -17,107 +19,96 @@ Built with React + TypeScript + Vite, Tailwind CSS, Chart.js and the Firebase We
 - **Plan** — category budgets with progress bars, savings goals with contributions, recurring bills you can log
   into the ledger for the active month.
 - **Vaulty Assistant** — speak or type a command in **English or Arabic** to log money, set budgets, fund goals,
-  change settings or ask questions. Answers can be read aloud.
+  change settings or ask questions. Android speech recognition and text-to-speech are used when available.
 - **Insights** — graphs for every expense and income category, daily flow, biggest entries and per-account flow.
-- **Widgets** — configurable cards on the home screen (net worth, monthly spend, top budget, top goal, assistant).
-- **In-app updates** — the Android app checks GitHub releases at launch, downloads the new APK and opens
-  Android's installer (automatic when Auto-update is on). No manual re-download from the browser.
-- **Notifications** — budget alerts at 90% and over-limit, due-bill reminders and a daily check-in at an hour you pick.
-- **Settings & data** — JSON backup / restore, CSV export, start fresh, restore sample data, live cloud-sync status.
+- **Notifications** — budget alerts at 90% and over-limit, recurring bill reminders and a daily check-in at an hour
+  you pick. Alarms are native and survive reboot/app replacement.
+- **Settings & data** — JSON backup / restore, CSV export, start fresh, restore sample data, notification controls,
+  update controls, theme/currency and local-only sync status.
+- **In-app updates** — checks the HTTPS release manifest, verifies SHA-256 and size, then opens Android's installer.
 - Light/dark theme, six currencies, month switching, demo data you can clear in one tap.
 
-## Run it
+## Build the native APK
+
+Use JDK 21, Android SDK platform 36.1 and build-tools 36.x. Point Gradle at your SDK with `ANDROID_HOME` or
+`android/local.properties`:
 
 ```bash
-npm install
-npm run dev          # http://localhost:3000
-npm run build        # typecheck + production build into dist/
-```
-
-Dependencies are pinned in `package-lock.json`; use `npm ci` for a clean install.
-
-## Android APK
-
-A Capacitor 6 shell in `android/` loads the built web app in a WebView. A prebuilt APK is at
-`releases/vaulty-1.2-release.apk` (package `com.vaulty.app`, version 1.2, minSdk 22), signed with the project's
-release key, so later versions signed with the same key install straight over it.
-
-```bash
-adb install -r releases/vaulty-1.2-release.apk
-```
-
-Or copy the file to the phone, open it, and allow installing from unknown sources.
-
-Rebuild it (needs JDK 17 and Android SDK platform 34 + build-tools 34.0.0):
-
-```bash
-npm install
-npm run android:sync        # build the web app and copy it into android/
 cd android
-./gradlew assembleRelease   # → app/build/outputs/apk/release/app-release.apk
 ./gradlew assembleDebug     # → app/build/outputs/apk/debug/app-debug.apk
+./gradlew assembleRelease   # → app/build/outputs/apk/release/app-release.apk (signed when keystore is present)
 ```
 
-Point Gradle at your SDK with `ANDROID_HOME` or a line `sdk.dir=/path/to/Android/sdk` in
-`android/local.properties`. `npm run android:apk` does the sync and build in one step once those are set.
+The package stays `com.vaulty.app`, version 1.3 (`versionCode` 4), `minSdk` 23 and `targetSdk` 34. Install over an
+existing build with:
 
-### Release signing
+```bash
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
 
-The signing material is deliberately **not in git**. Two files are needed:
+### Release signing and data preservation
 
-- `android/keystore/vaulty-release.jks` — the keystore (alias `vaulty`, RSA 2048, valid 10,000 days)
+The signing material is deliberately **not in git**. Two files are needed for a signed release:
+
+- `android/keystore/vaulty-release.jks` — the original release keystore
 - `android/keystore.properties` — `storeFile`, `storePassword`, `keyAlias`, `keyPassword`
 
 `android/app/build.gradle` reads that properties file when it exists and signs the `release` build type with it;
 without it `assembleRelease` builds unsigned and `assembleDebug` keeps using the debug key. `.gitignore` already
 excludes `android/keystore/`, `android/keystore.properties`, `*.jks` and `*.keystore`.
 
-```bash
-keytool -genkeypair -keystore android/keystore/vaulty-release.jks -alias vaulty \
-  -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Vaulty, O=Vaulty, C=EG"
-```
+> **Do not generate a new keystore for an existing install.** Android refuses to install an APK signed with a
+> different certificate; the user would have to uninstall the old app, which deletes its local ledger. Restore the
+> original `vaulty-release.jks` and credentials before publishing any update.
 
-Keep both files backed up: Android refuses to install an APK whose signing certificate differs from the
-installed app's, so losing the key means users must uninstall before installing the next build. For Play Store
-uploads, run `./gradlew bundleRelease` (`.aab`).
+An in-place install (same package **and** same signing key) keeps the app's private storage, so accounts,
+transactions and settings survive updates. The native store mirrors data under `vaulty_state_v1` and
+`vaulty_state_backup_v1`, writes `vaulty_state_pre_update_v1` before installing an APK, and Android backup rules
+exclude the APK download cache.
 
-**WebView notes:** Android WebView does not implement the Web Speech API, so the assistant's microphone reports
-“not supported” inside the APK — typed commands (English or Arabic) work exactly the same. Web Notifications are
-also unavailable in WebView, so the notification toggle reports that it is unsupported. Firebase works because the JS SDK talks to
-Firestore directly; `google-services.json` is not needed (no native FCM). After changing web code, rebuild and run
-`npx cap sync android`, or the APK keeps the old assets. The launcher icon is still Capacitor's default.
+### One-time WebView migration
+
+On first native launch, if no native state exists, Vaulty reads the legacy Capacitor WebView `localStorage` for the
+`https://localhost/` origin (`vaulty_state_v1`, its backup and pre-update keys), normalizes it, writes it to native
+storage and never reads it again. If no legacy data exists, sample data is seeded and saved. No WebView screen is
+ever shown.
 
 ## In-app updates
 
-The Android build updates itself from this repository's GitHub releases — you never have to download
-`vaulty-1.x.apk` by hand:
+The Android build updates itself from this repository's GitHub releases:
 
-- at launch it reads `update.json` at the repository root (served from raw.githubusercontent, so there is no
-  GitHub API quota to run into), at most once every six hours;
-- the release's `versionCode` is compared with the installed one;
-- **Auto-update** (Settings → App Updates, on by default) downloads the APK in the background, verifies the
-  `sha256` digest published with the release, and opens Android's installer;
-- with Auto-update off, Home shows an *Update available* card and Settings has **Check now**.
+- at launch it reads `update.json` from `https://raw.githubusercontent.com/GiovanniEhab/vaulty/main/update.json`,
+  at most once every six hours;
+- the manifest `versionCode` is compared with the installed one (with a `version` string fallback);
+- **Auto-update** (Settings → App Updates, on by default) downloads the APK, verifies the mandatory `sha256` digest
+  and file size, and opens Android's installer;
+- with Auto-update off, Home shows an *Update available* card and Settings has **Check now**;
+- if Android needs “Install unknown apps” permission, Vaulty opens the correct settings screen and reuses the
+  already verified APK when you tap Install again.
 
-Android never installs silently for a normal app: the system installer asks for confirmation, and the first time
-you must allow "install unknown apps" for Vaulty. That is as automatic as the platform allows outside the Play
-Store. The permission is declared as `REQUEST_INSTALL_PACKAGES`; the downloaded file is served to the installer
-through the app's `FileProvider` from the cache directory.
-
-The feed is configurable with `VITE_UPDATE_FEED` — the default `update.json`, any GitHub “latest release”
-endpoint, or any JSON manifest shaped like:
+The download is served from the app's cache through a narrowly scoped `FileProvider`. Both the manifest and APK URL
+must be HTTPS, and a checksum mismatch aborts the update. The feed shape is:
 
 ```json
-{ "version": "1.3", "versionCode": 4, "url": "https://…/vaulty-1.3-release.apk", "sha256": "…", "notes": "…" }
+{ "version": "1.3", "versionCode": 4, "url": "https://…/vaulty-1.3-release.apk", "sha256": "…", "size": 1234567, "notes": "…" }
 ```
 
-`update.json` is rewritten for each release (same values as the release notes) — bump `version` and `versionCode`
-there when you publish, or point the app at the GitHub API endpoint instead. Because the app reads the manifest
-without signing in, the repository has to be public; only collaborators can push or edit it.
+### Publishing a new version
+
+1. Restore the original release keystore and `android/keystore.properties`. **Never** create a fresh keystore for an
+   app that is already installed on phones.
+2. Bump `versionCode` and `versionName` in `android/app/build.gradle`. The version code must be higher than the one
+   in `update.json`, otherwise clients will think they are already up to date.
+3. Build `assembleRelease` with JDK 21 and the Android SDK configured.
+4. Upload the signed APK to a new GitHub release at the exact URL you will publish.
+5. Compute the digest of that same file, e.g. `certutil -hashfile vaulty-1.4-release.apk SHA256`.
+6. Only then update `update.json` with the new `version`, `versionCode`, HTTPS `url`, `sha256`, `size` and notes.
+   Do not point the feed at a file that has not been uploaded yet.
+7. Install the new APK over the old one on a test device and confirm the ledger is still there.
 
 ## Vaulty Assistant
 
-Tap the microphone in the header (or the Assistant widget) and talk, or type the same sentence in the sheet.
+Tap the microphone in the header (or the Assistant sheet) and speak, or type the same sentence.
 
 | Say | What happens |
 | --- | --- |
@@ -131,158 +122,52 @@ Tap the microphone in the header (or the Assistant widget) and talk, or type the
 | “Remind me at 8 pm”, “Turn on notifications” | Sets the daily check-in |
 | “Undo last” | Deletes the most recent transaction |
 
-Arabic works the same way — switch the assistant to **العربية** (chips at the top of the sheet), or simply type
-Arabic, which is detected automatically. Recognition then uses `ar-EG` and replies are spoken in Arabic:
+Arabic works the same way — switch to **العربية** in the sheet, or simply type Arabic; it is detected automatically.
+Recognition uses `ar-EG` and replies use an Arabic voice when one is installed. The parser folds hamza/alef/yaa,
+tashkeel, Arabic-Indic digits and “ألف” as a thousand multiplier, and matches Arabic account/category aliases.
 
-| قول | النتيجة |
-| --- | --- |
-| “صرفت ٢٥٠ على البقالة” / “دفعت ٩٥٠٠ إيجار” | يسجل مصروف ويستنتج التصنيف |
-| “إيداع ٥٠٠٠ راتب في البنك” | يسجل دخل في الحساب المذكور |
-| “حول ١٠٠٠ من البنك للتوفير” | تحويل بين الحسابات |
-| “حدد ميزانية البقالة ٦٠٠٠” | يحدّث أو ينشئ الميزانية |
-| “ضيف ٥٠٠ لهدف الطوارئ” | يضيف مبلغ للهدف |
-| “فاضل كام في ميزانية البقالة؟” | يقرأ الأرقام |
-| “الوضع الليلي”، “استخدم الدولار”، “الشهر الجاي”، “افتح التحليلات” | يغيّر التطبيق |
-| “نبهني الساعة ٨ مساءً”، “فعل الإشعارات” | يضبط التنبيه اليومي |
-| “تراجع” | يمسح آخر حركة |
+**Speak replies** uses Android `TextToSpeech`. If voice input is unavailable, typing always works.
 
-The parser normalises Arabic (hamza/alef/yaa/taa-marbuta folding, tashkeel, Arabic-Indic digits ٠-٩, “ألف” as a
-thousand multiplier) and matches categories and accounts with Arabic aliases, so “للتوفير” finds your savings
-account and “البنك” finds the bank account. Arabic listeners use `ar-EG`; replies use an Arabic voice when one is
-installed on the device.
+## Insights and widgets
 
-Speech input uses the Web Speech API, so it needs Chrome, Edge or Safari plus microphone permission; every command
-also works by typing, which is the fallback everywhere else. Replies are spoken with `speechSynthesis` while
-**Speak replies** is on. The parser lives in `src/lib/assistant.ts` and returns a plan (`transaction`, `budget`,
-`goal`, `settings`, `navigate`, `delete`, `answer`) that the sheet executes through the normal store actions.
+Open **Insights** from the Activity screen or with the assistant (“show insights” / “افتح التحليلات”). It shows
+income, expenses, net and savings rate; expenses by category; income by source; day-by-day flow; biggest entries;
+per-account flow; and comparison with the previous month.
 
-## Insights
-
-Open **Insights** from the Activity screen, the “Details” link on the 6-month cash-flow card, or with the
-assistant (“show insights” / “افتح التحليلات”). For the active month it shows:
-
-- income, expenses, net and savings rate,
-- expenses by category as a horizontal bar chart with amounts and shares,
-- income by source as a doughnut with shares,
-- a day-by-day in/out chart for the month,
-- the biggest individual expenses and income entries,
-- money in and out of every account (transfers included),
-- how spending compares with the previous month.
-
-## Widgets
-
-Home shows a horizontal strip of widgets. Tap **Edit** on the strip to choose which ones appear. The selection is
-saved with your other settings (`widgetIds`), so it follows you to Firestore. These are in-app widgets — a real
-OS home-screen widget needs a native wrapper (Capacitor/React Native); this app is a web PWA.
+Home widgets are in-app cards. Tap **Edit** on the widget strip to choose which ones appear; the selection is saved
+with your other settings. A real Android home-screen `AppWidget` provider is not included.
 
 ## Notifications
 
-Enable them in **Settings & Data → Notifications** and allow the browser prompt. Vaulty then raises local
-notifications for:
+Enable them in **Settings & Data → Notifications** and allow the `POST_NOTIFICATIONS` prompt:
 
-- a category budget reaching 90% or going over its limit,
-- a recurring bill due this month that has not been logged yet,
-- a daily check-in at the hour you choose.
+- the daily check-in is an exact alarm at the hour you choose (channel `vaulty-alerts`);
+- each recurring bill gets a monthly reminder at 09:00, with the day clamped to 1–28;
+- a category budget reaching 90% or going over its limit raises an alert while Vaulty is open;
+- **Send test notification** verifies the permission/channel/alarm path.
 
-Each alert fires at most once per item per month (tracked in `localStorage`). They are **local only**: they need
-Vaulty open in a tab, because there is no push server or service worker behind them. Background push would need a
-backend (for example FCM plus a scheduler).
-
-## Connect your own Firebase database
-
-The app runs without Firebase (localStorage only). To sync it to your account:
-
-1. Open the [Firebase console](https://console.firebase.google.com) and create a project.
-2. **Build → Firestore Database → Create database**, pick a region, start in production mode.
-3. **Build → Authentication → Get started → Sign-in method → Anonymous → Enable.**
-   (Vaulty signs in anonymously so there is no login screen; the rules still isolate your data.)
-4. **Project settings → Your apps → Web app (`</>`)** — register an app and copy the `firebaseConfig` values.
-5. Create your env file and paste the values:
-
-   ```bash
-   cp .env.example .env
-   ```
-
-   ```
-   VITE_FIREBASE_API_KEY=...
-   VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-   VITE_FIREBASE_PROJECT_ID=your-project
-   VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-   VITE_FIREBASE_MESSAGING_SENDER_ID=...
-   VITE_FIREBASE_APP_ID=...
-   ```
-
-   These values are public identifiers, not secrets — access is controlled by `firestore.rules`.
-
-6. Deploy the security rules (only you can read/write your documents):
-
-   ```bash
-   npm install -g firebase-tools
-   firebase login
-   firebase use --add          # choose your project, alias "default"
-   npm run firebase:deploy:rules
-   ```
-
-7. Restart `npm run dev`. Open the sliders icon → **Settings & Data**: it should read
-   “Firebase Firestore — connected” with your project id.
-
-### Firestore layout
-
-```
-users/{uid}                     currency, theme, activeMonth, demo flags
-users/{uid}/accounts/{id}       { name, type, initialBalance, color }
-users/{uid}/transactions/{id}   { type, amount, date, accountId, toAccountId, category, description, notes }
-users/{uid}/budgets/{id}        { category, limit }
-users/{uid}/goals/{id}          { name, target, current, deadline, color }
-users/{uid}/recurring/{id}      { title, type, amount, dayOfMonth, accountId, category, lastLoggedMonth }
-```
-
-Writes go straight to Firestore and five live listeners keep every screen in sync. Without config, the same
-data model is persisted to localStorage under `vaulty_state_v1`, so nothing is lost if you add Firebase later —
-the first connection seeds the empty database with what is on the device.
-
-Rules (`firestore.rules`) allow a user to touch only `users/{their-uid}/**`.
-
-### Optional: local emulators
-
-```bash
-firebase emulators:start --only firestore,auth
-```
-
-Point the app at the emulator by adding `connectFirestoreEmulator`/`connectAuthEmulator` calls in
-`src/lib/repo.ts` during development.
-
-## Publish to GitHub
-
-The repo has an initial commit; push it to your account:
-
-```bash
-gh repo create vaulty --private --source=. --remote=origin --push
-# or, with an existing empty repo:
-git remote add origin git@github.com:<you>/vaulty.git
-git push -u origin main
-```
-
-`.env` is gitignored — keep your project config out of the repo and set it wherever you deploy.
+Alarms are restored after `BOOT_COMPLETED` and `MY_PACKAGE_REPLACED`. Android 12+ exact-alarm access is requested
+separately; without it reminders still arrive but may be delayed. Budget alerts are tracked per month and failed
+sends are retried. There is no push server — all alerts are local to the device.
 
 ## Project structure
 
 ```
-src/
-  lib/        types, constants, money math, seed data, Firebase repo, helpers
-  store/      VaultContext — all CRUD actions, local persistence, cloud writes
-  ui/         navigation + sheet context
-  components/ header pieces, bottom nav, transaction row, form controls, toasts
-  sheets/     add/edit sheets for transactions, accounts, budgets, goals, bills, data
-  views/      Home, Activity, Accounts, Plan
-firestore.rules / firestore.indexes.json / firebase.json
+android/app/src/main/java/com/vaulty/app/
+  MainActivity.kt             Compose shell, navigation, document pickers, speech/TTS
+  VaultModels.kt / VaultJson.kt / VaultSeed.kt / VaultCalc.kt / VaultFormat.kt
+  VaultStore.kt / VaultRepository.kt / VaultUpdater.kt / VaultUpdateController.kt
+  VaultNotifications.kt       alarms, channel, receiver, budget alerts
+  VaultAssistant.kt / VaultAssistantPanel.kt
+  VaultViews.kt / VaultSheets.kt / VaultDataPanel.kt / VaultUi.kt / VaultCharts.kt
+android/app/src/main/res/xml/  backup rules and FileProvider paths
+src/                           legacy React source (reference only; not bundled)
 ```
 
 ## Notes and limits
 
-- Anonymous auth is per browser profile. Opening the deployed site on a **new** device creates a new anonymous
-  user with its own ledger. Add email/password (or Google) sign-in if you want the same ledger on several devices.
-- This is a single-user ledger by design: there are no shared/household spaces.
+- The native app is local-only. Firestore sync from the legacy web source is not part of the APK.
 - Currency is a display setting; there is no FX conversion.
-- Voice input depends on browser support and microphone permission; typing always works.
-- Widgets are in-app cards, and notifications are local while the app is open (see the sections above).
+- This is a single-user ledger by design: there are no shared/household spaces.
+- In-place APK updates require the original signing key and keep the `com.vaulty.app` package name. Uninstalling
+  the app deletes the local ledger, so export a JSON backup first if you must reinstall.

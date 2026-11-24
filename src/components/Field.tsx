@@ -1,4 +1,5 @@
-import type { ReactNode, SelectHTMLAttributes, InputHTMLAttributes } from 'react';
+import type { ReactNode, InputHTMLAttributes } from 'react';
+import { Select, type SelectOption } from './Select';
 
 const controlClass =
   'w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100';
@@ -52,16 +53,33 @@ export function MoneyField({
 
 export function SelectField({
   label,
-  children,
-  className = 'h-11',
-  ...props
-}: SelectHTMLAttributes<HTMLSelectElement> & { label?: string }) {
+  value,
+  onChange,
+  options,
+  disabled,
+  placeholder,
+  className = '',
+}: {
+  label?: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: SelectOption[];
+  disabled?: boolean;
+  placeholder?: string;
+  className?: string;
+}) {
   return (
     <div>
       {label ? <Label>{label}</Label> : null}
-      <select {...props} className={`${controlClass} ${className}`}>
-        {children}
-      </select>
+      <Select
+        value={value}
+        options={options}
+        onChange={onChange}
+        disabled={disabled}
+        placeholder={placeholder}
+        ariaLabel={label}
+        className={className}
+      />
     </div>
   );
 }

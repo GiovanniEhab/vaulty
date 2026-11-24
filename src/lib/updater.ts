@@ -1,5 +1,6 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { useSyncExternalStore } from 'react';
+import { BACKUP_KEY, PRE_UPDATE_BACKUP_KEY, STORAGE_KEY } from './storage';
 
 export interface UpdateInfo {
   version: string;
@@ -17,7 +18,7 @@ export interface UpdateInfo {
 interface NativeUpdater {
   getInfo(): Promise<{ version: string; versionCode: number; installAllowed: boolean }>;
   check(options: { manifestUrl: string }): Promise<UpdateInfo>;
-  download(options: { url: string; sha256: string; version: string }): Promise<{ path: string; size: number; sha256: string }>;
+  download(options: { url: string; sha256: string; version: string; size: number }): Promise<{ path: string; size: number; sha256: string }>;
   install(options: { path: string }): Promise<void>;
   addListener(
     event: 'downloadProgress',
@@ -58,6 +59,9 @@ export interface UpdateState {
 
 let snapshot: UpdateState = { status: 'idle', info: null, percent: 0, message: '', currentVersion: '' };
 const listeners = new Set<() => void>();
+/** APK already downloaded in this session, so a permission detour does not download it twice. */
+let downloadedPath: string | null = null;
+let downloadedVersion: string | null = null;
 
 function setState(patch: Partial<UpdateState>): void {
   snapshot = { ...snapshot, ...patch };
@@ -85,6 +89,16 @@ function errorMessage(error: unknown): string {
   return 'Something went wrong.';
 }
 
+/** Keep a copy of the ledger before handing control to Android's installer. */
+function snapshotBeforeUpdate(): void {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(BACKUP_KEY);
+    if (raw) localStorage.setItem(PRE_UPDATE_BACKUP_KEY, raw);
+  } catch {
+    /* the normal on-device copies are still intact */
+  }
+}
+
 export async function installedVersion(): Promise<string> {
   if (!isAndroidApp()) return 'web';
   try {
@@ -109,12 +123,18 @@ export async function checkForUpdates(): Promise<void> {
   try {
     const info = await Native.check({ manifestUrl: UPDATE_FEED });
     localStorage.setItem(LAST_CHECK_KEY, String(Date.now()));
+    if (downloadedVersion !== info.version) {
+      downloadedPath = null;
+      downloadedVersion = null;
+    }
     setState({
       info,
       currentVersion: info.currentVersion,
       status: info.updateAvailable ? 'available' : 'uptodate',
       message: info.updateAvailable
-        ? `Version ${info.version} is available. You have ${info.currentVersion}.`
+        ? info.installAllowed === false
+          ? `Version ${info.version} is available. Android must allow Vaulty to install unknown apps before it can update.`
+          : `Version ${info.version} is available. You have ${info.currentVersion}.`
         : `You are on the latest version (${info.currentVersion}).`,
     });
   } catch (error) {
@@ -127,17 +147,70 @@ export async function downloadAndInstall(): Promise<void> {
   const { info } = snapshot;
   if (!info || !isAndroidApp()) return;
 
+  if (!/^[a-f0-9]{64}$/i.test(info.sha256 ?? '')) {
+    setState({
+      status: 'error',
+      message: 'The update feed has no SHA-256 checksum, so Vaulty will not install it.',
+    });
+    return;
+  }
+
+  // If the APK was already downloaded (for example while passing through the install
+  // permission screen), hand the same verified file to the installer again.
+  if (downloadedPath && downloadedVersion === info.version) {
+    try {
+      snapshotBeforeUpdate();
+      await Native.install({ path: downloadedPath });
+      setState({
+        status: 'ready',
+        message: 'Android installer opened. Confirm the update — your data stays in place.',
+      });
+      return;
+    } catch (error) {
+      const message = errorMessage(error);
+      if (/missing|download it again/i.test(message)) {
+        downloadedPath = null;
+        downloadedVersion = null;
+      } else {
+        setState({ status: 'ready', message: `${message} Tap Install to try again.` });
+        return;
+      }
+    }
+  }
+
   setState({ status: 'downloading', percent: 0, message: 'Downloading the update…' });
   let progressHandle: { remove: () => Promise<void> } | null = null;
   try {
     progressHandle = await Native.addListener('downloadProgress', ({ percent }) => {
-      setState({ percent });
+      setState({ percent: Math.max(0, Math.min(100, Math.round(percent))) });
     });
-    const file = await Native.download({ url: info.url, sha256: info.sha256 ?? '', version: info.version });
+    const file = await Native.download({
+      url: info.url,
+      sha256: info.sha256,
+      version: info.version,
+      size: info.size || 0,
+    });
+    if (file.sha256 && file.sha256.toLowerCase() !== info.sha256.toLowerCase()) {
+      throw new Error('The downloaded update did not match its published checksum.');
+    }
+    downloadedPath = file.path;
+    downloadedVersion = info.version;
     setState({ status: 'ready', percent: 100, message: 'Downloaded. Confirm the install in Android.' });
+    snapshotBeforeUpdate();
     await Native.install({ path: file.path });
+    setState({
+      status: 'ready',
+      message: 'Android installer opened. Confirm the update — your data stays in place.',
+    });
   } catch (error) {
-    setState({ status: 'error', message: errorMessage(error) });
+    const message = errorMessage(error);
+    if (downloadedPath && downloadedVersion === info.version) {
+      setState({ status: 'ready', message: `${message} Tap Install to try again.` });
+    } else {
+      downloadedPath = null;
+      downloadedVersion = null;
+      setState({ status: 'error', message });
+    }
   } finally {
     if (progressHandle) void progressHandle.remove();
   }

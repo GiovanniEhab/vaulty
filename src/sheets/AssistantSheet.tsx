@@ -3,7 +3,7 @@ import Icon from '../components/Icon';
 import Sheet from '../components/Sheet';
 import { Switch } from '../components/Field';
 import { ASSISTANT_SUGGESTIONS, planCommand } from '../lib/assistant';
-import { notificationPermission, requestNotificationPermission } from '../lib/notifications';
+import { isNativeAndroid, notificationPermission, requestNotificationPermission } from '../lib/notifications';
 import { createRecognition, isSpeechRecognitionSupported, speak, stopSpeaking, type SpeechRecognitionLike } from '../lib/voice';
 import { useVault } from '../store/VaultContext';
 import { useUI } from '../ui/UIContext';
@@ -77,10 +77,12 @@ export function AssistantSheet({ onClose }: { onClose: () => void }) {
         openSheet({ kind: 'insights' });
         break;
       case 'settings':
-        if (plan.patch.notificationsEnabled && notificationPermission() !== 'granted') {
+        if (plan.patch.notificationsEnabled && (await notificationPermission()) !== 'granted') {
           const granted = await requestNotificationPermission();
           if (!granted) {
-            reply = 'Notifications are blocked in this browser. Allow them in the site settings and ask again.';
+            reply = `Notifications are blocked. Allow them for Vaulty in ${
+              isNativeAndroid() ? 'Android settings' : 'your browser settings'
+            }, then ask again.`;
             updateSettings({ notificationsEnabled: false });
             break;
           }
