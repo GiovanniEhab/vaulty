@@ -1,9 +1,9 @@
 {
-  "version": "1.4",
-  "versionCode": 5,
-  "url": "https://github.com/GiovanniEhab/vaulty/releases/download/v1.4/vaulty-1.4-release.apk",
-  "sha256": "0e9713474cbd314448d5448bf648bcc3deacbd4a6542608a42dfa454fcdbbd6e",
-  "size": 8402468,
-  "notes": "Vaulty 1.4 is a fully native Kotlin/Compose app with all the same features. New signing key: uninstall older versions before installing.",
-  "releasedAt": "2026-11-24T22:53:46Z"
+  "version": "1.5",
+  "versionCode": 6,
+  "url": "https://github.com/GiovanniEhab/vaulty/releases/download/v1.5/vaulty-1.5-release.apk",
+  "sha256": "7723d7aa0cba9913f4c7a4df08276c1e1815328e2b40ca6a3b4f66fa20b1d2c6",
+  "size": 8442639,
+  "notes": "Icons restored to Lucide vector artwork and selector dropdowns now open and select reliably. In-place update from 1.4.",
+  "releasedAt": "2026-11-24T23:20:15Z"
 }
